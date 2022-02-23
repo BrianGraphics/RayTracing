@@ -93,8 +93,8 @@ Intersection Cylinder::Intersect(Ray ray)
         intervalB = Interval((-b - dis) / 2 / a, (-b + dis) / 2 / a, vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 0.0f, 1.0f));
         
 
-        intervalB.N0 = vec3(Q.x + intervalB.t0 * D.x, Q.y + intervalB.t0 * D.y, 0.0f) * 15.0f;
-        intervalB.N1 = vec3(Q.x + intervalB.t1 * D.x, Q.y + intervalB.t1 * D.y, 0.0f) * 15.0f;
+        intervalB.N0 = vec3(Q.x + intervalB.t0 * D.x, Q.y + intervalB.t0 * D.y, 0.0f);
+        intervalB.N1 = vec3(Q.x + intervalB.t1 * D.x, Q.y + intervalB.t1 * D.y, 0.0f);
     }
 
     intervalA.Intersect(intervalB);
@@ -114,7 +114,8 @@ Intersection Cylinder::Intersect(Ray ray)
     IntersectionRecord.t = t;
     IntersectionRecord.P = ray.Q + t * ray.D;
     IntersectionRecord.N = t == t0 ? intervalA.N0 : intervalA.N1;
-    IntersectionRecord.N = t_R * IntersectionRecord.N;
+    IntersectionRecord.N = normalize(t_R * IntersectionRecord.N);
+
 
     return IntersectionRecord;
 }

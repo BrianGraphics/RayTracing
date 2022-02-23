@@ -89,7 +89,8 @@ public:
     Material* currentMat;
     vec3 ambient;
     std::vector<Shape*> vectorOfShapes;
-    std::vector<Material*> Lights;
+    Shape* light;
+    vec3 lightPos;
 
 
     Scene();

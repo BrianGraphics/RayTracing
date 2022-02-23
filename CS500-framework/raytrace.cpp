@@ -127,7 +127,13 @@ void Scene::Command(const std::vector<std::string>& strings,
         // Creates a Shape instance for a sphere defined by a center and radius
         //realtime->sphere(vec3(f[1], f[2], f[3]), f[4], currentMat); 
         Shape* sphere = new Sphere(vec3(f[1], f[2], f[3]), f[4], currentMat);
-        vectorOfShapes.push_back(sphere);
+        if (currentMat->isLight()) {
+            light = sphere;
+            lightPos = vec3(f[1], f[2], f[3]);
+        }
+        else {
+            vectorOfShapes.push_back(sphere);
+        }
     }
 
     else if (c == "box") {
@@ -168,29 +174,38 @@ void Scene::TraceImage(Color* image, const int pass)
 {
     float rx = camera.ry * width / height;
     float dx = 0.0f, dy = 0.0f;
-    Color* tmp = new Color[width * height];
-    for (int y = 0; y < height; y++)
-        for (int x = 0; x < width; x++)
-            tmp[y * width + x] = Color(0, 0, 0);
-
+    Intersection front;
     vec3 X = rx * transformVector(camera.orientation, Xaxis());
     vec3 Y = camera.ry * transformVector(camera.orientation, Yaxis());
     vec3 Z = transformVector(camera.orientation, Zaxis());
-    for (int i = 0; i < pass; ++i) {
-        #pragma omp parallel for schedule(dynamic, 1) // Magic: Multi-thread y loop
-        for (int y = 0; y < height; y++) {
-            fprintf(stderr, "Rendering %4d\r", y);
-            for (int x = 0; x < width; x++) {
-                float xx = random;
-                dx = 2 * (x + random) / width - 1;
-                dy = 2 * (y + random) / height - 1;
-                Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
-                tmp[y * width + x] += TracePath(ray);
-                if (random > RR) image[y * width + x] = tmp[y * width + x] / (float)pass;
+    vec3 L(0);
+    Color color(0);
+
+    #pragma omp parallel for schedule(dynamic, 1) // Magic: Multi-thread y loop
+    for (int y = 0; y < height; y++) {
+        fprintf(stderr, "Rendering %4d\r", y);
+        for (int x = 0; x < width; x++) {
+            float xx = random;
+            dx = 2 * (x + random) / width - 1;
+            dy = 2 * (y + random) / height - 1;
+            Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
+            front = TraceRay(ray);
+                
+
+            color = vec3(0);
+            if (front.t != std::numeric_limits<float>::infinity()) {
+                L = normalize( - front.P);
+                color = glm::max(0.0f, dot(glm::abs(front.N), L)) * front.shape->material->Kd;
+                //color = front.P;
+                //color = front.shape->material->Kd
+                //color = glm::abs(front.N);
+                //color = vec3((front.t -5.0f) / 4.0f);
             }
+
+            image[y * width + x] = color;
         }
-        printf("pass: %i\n", i);
     }
+    
     fprintf(stderr, "\n");
 }
 
