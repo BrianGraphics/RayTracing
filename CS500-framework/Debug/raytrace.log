@@ -1,0 +1,22 @@
+﻿cl : command line warning D9035: option 'Gm' has been deprecated and will be removed in a future release
+  raytrace.cpp
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\libs\bvh\vector.hpp(94,1): warning C4141: 'inline': used more than once
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\libs\bvh\vector.hpp(100,1): warning C4141: 'inline': used more than once
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\libs\bvh\vector.hpp(106,1): warning C4141: 'inline': used more than once
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\libs\bvh\vector.hpp(112,1): warning C4141: 'inline': used more than once
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\libs\bvh\vector.hpp(118,1): warning C4141: 'inline': used more than once
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\libs\bvh\vector.hpp(124,1): warning C4141: 'inline': used more than once
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\libs\bvh\vector.hpp(130,1): warning C4141: 'inline': used more than once
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\libs\bvh\vector.hpp(136,1): warning C4141: 'inline': used more than once
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\libs\bvh\vector.hpp(145,1): warning C4141: 'inline': used more than once
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\libs\bvh\vector.hpp(151,1): warning C4141: 'inline': used more than once
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\libs\bvh\vector.hpp(161,1): warning C4141: 'inline': used more than once
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\libs\bvh\utilities.hpp(41,13): warning C4068: unknown pragma 'STDC'
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\libs\bvh\utilities.hpp(50,13): warning C4068: unknown pragma 'STDC'
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\libs\bvh\utilities.hpp(163,1): warning C4010: single-line comment contains line-continuation character
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\libs\bvh\utilities.hpp(164,1): warning C4010: single-line comment contains line-continuation character
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\raytrace.h(60,1): warning C4099: 'MeshData': type name first seen using 'class' now seen using 'struct'
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\raytrace.h(59): message : see declaration of 'MeshData'
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\raytrace.cpp(47,23): warning C4018: '<': signed/unsigned mismatch
+C:\Users\laugh\OneDrive\Desktop\CS500-framework\raytrace.cpp(68,13): warning C4018: '<': signed/unsigned mismatch
+  raytrace.vcxproj -> C:\Users\laugh\OneDrive\Desktop\CS500-framework\Debug\raytrace.exe
