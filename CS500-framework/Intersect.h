@@ -14,7 +14,7 @@ public:
 	Interval(float _t0, float _t1, vec3 _N0, vec3 _N1);
 	
 	void Intersect(Interval other);
-	void Intersect(Ray ray, Slab other);
+	void Intersect(Ray ray, Slab slab);
 	void empty();
 	float t0;
 	float t1;

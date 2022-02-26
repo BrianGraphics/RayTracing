@@ -33,8 +33,8 @@ void Interval::empty()
 
 void Interval::Intersect(Interval other)
 {
-	t0 = glm::max(t0, other.t0);
-	t1 = glm::min(t1, other.t1);
+	t0 = fmaxf(t0, other.t0);
+	t1 = fminf(t1, other.t1);
 	N0 = t0 == other.t0 ? other.N0 : N0;
 	N1 = t1 == other.t1 ? other.N1 : N1;
 }
@@ -58,9 +58,10 @@ void Interval::Intersect(Ray ray, Slab slab)
 		if (t0 > t1) std::swap(t0, t1);
 	}
 	else {
+		NdotQ = glm::dot(N, Q);
 		s0 = NdotQ + d0;
 		s1 = NdotQ + d1;
-		if (s0 * s1 < 0) {
+		if (s0 * s1 < 0 && s0 != s1) {
 			t0 = 0;
 			t1 = std::numeric_limits<float>::infinity();
 		}

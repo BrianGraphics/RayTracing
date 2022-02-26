@@ -1,0 +1,12 @@
+
+*.db
+CS500-framework/.vs/raytrace/v16/ipch/AutoPCH/c4bcd5a821f9bc69/SHAPES.ipch
+CS500-framework/.vs/raytrace/v16/ipch/AutoPCH/a2c99b13958d6da8/RAYTRACE.ipch
+CS500-framework/.vs/raytrace/v16/ipch/AutoPCH/825a49fdadb2091a/RAYTRACE.ipch
+CS500-framework/.vs/raytrace/v16/ipch/AutoPCH/743a55f6c73cd673/ACCELERATION.ipch
+CS500-framework/.vs/raytrace/v16/ipch/AutoPCH/293af3006026b62/MAIN.ipch
+CS500-framework/.vs/raytrace/v16/ipch/AutoPCH/21b954e28e961b72/INTERSECT.ipch
+CS500-framework/.vs/raytrace/v16/Browse.VC.opendb
+CS500-framework/.vs/raytrace/v16/Browse.VC.db-wal
+CS500-framework/.vs/raytrace/v16/Browse.VC.db-shm
+CS500-framework/.vs/raytrace/v16/.suo

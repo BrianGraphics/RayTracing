@@ -180,28 +180,25 @@ void Scene::TraceImage(Color* image, const int pass)
     vec3 Z = transformVector(camera.orientation, Zaxis());
     vec3 L(0);
     Color color(0);
+    AccelerationBvh bvh(vectorOfShapes);
 
-    #pragma omp parallel for schedule(dynamic, 1) // Magic: Multi-thread y loop
+//#pragma omp parallel for schedule(dynamic, 1) // Magic: Multi-thread y loop
     for (int y = 0; y < height; y++) {
         fprintf(stderr, "Rendering %4d\r", y);
         for (int x = 0; x < width; x++) {
-            float xx = random;
-            dx = 2 * (x + random) / width - 1;
-            dy = 2 * (y + random) / height - 1;
-            Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
-            front = TraceRay(ray);
-                
+            dx = 2 * (x + 0.5f) / width - 1;
+            dy = 2 * (y + 0.5f) / height - 1;
+            Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));          
+            front = bvh.intersect(ray);              
 
             color = vec3(0);
-            if (front.t != std::numeric_limits<float>::infinity()) {
-                L = normalize( - front.P);
-                color = glm::max(0.0f, dot(glm::abs(front.N), L)) * front.shape->material->Kd;
-                //color = front.P;
-                //color = front.shape->material->Kd
-                //color = glm::abs(front.N);
-                //color = vec3((front.t -5.0f) / 4.0f);
-            }
-
+            L = normalize(lightPos - front.P);
+            color = glm::max(0.0f, dot(glm::abs(front.N), L)) * front.shape->material->Kd;
+            //color = front.P;
+            //color = front.shape->material->Kd;
+            //color = glm::abs(front.N);
+            //color = vec3((front.t -5.0f) / 4.0f);
+            
             image[y * width + x] = color;
         }
     }
@@ -209,85 +206,14 @@ void Scene::TraceImage(Color* image, const int pass)
     fprintf(stderr, "\n");
 }
 
-Color Scene::TracePath(Ray ray)
-{
-    Color C = Color(0.0, 0.0, 0.0);
-    vec3 W = vec3(1.0, 1.0, 1.0);
-    vec3 Light = vec3(1.9, 5.0, 2.0);
-    vec3 L(0.0f), N(0.0f), O_i(0.0f), f(0.0f);
-    float p = 0.0f;
-    Ray new_ray = ray;
-
-    Intersection P, Q;
-    P = TraceRay(ray);
-
-    if (P.t != std::numeric_limits<float>::infinity()) {
-        if (P.shape->material->isLight())
-            return P.shape->material->Kd; // return EvalRadiance(P)
-        
-        while (random <= RR) {
-            N = P.N;
-            O_i = SampleLobe(N, sqrtf(random), 2 * PI * random);
-            new_ray.Q = P.P;
-            new_ray.D = O_i;
-
-            Q = TraceRay(new_ray);
-            if (Q.t != std::numeric_limits<float>::infinity()) {               
-                float NO = fabsf(dot(N, O_i));
-                p = NO / PI;
-                if (p < 0.000001) break;
-
-                f = P.shape->material->Kd * p;
-                W *= f / p;           
-
-                if (Q.shape->material->isLight()) {
-                    C += 0.5f * W * Q.shape->material->Kd;
-                    C = dot(P.N, normalize(Light - P.P)) * P.shape->material->Kd / PI;
-                    break;
-                }
-
-                P = Q;
-            }
-            else {
-                break;
-            }
-        }
-    }
-    else {
-        // no intersection
-        return C;
-    }
-
-    return C;
-}
-
 Intersection Scene::TraceRay(Ray ray) {
     Intersection front, current;
     front.t = std::numeric_limits<float>::infinity();
-    for (auto shape : vectorOfShapes) {
-        current = shape->Intersect(ray);
-        if (current.t != -1.0f)
+    for (auto shape : vectorOfShapes) {     
+        if (shape->Intersect(ray, current))
             if (front.t > current.t)
                 front = current;
     }
 
     return front;
-}
-
-vec3 Scene::SampleLobe(vec3 A, float c, float phi) {
-    float s = 0.0f;
-    vec3 K(0.0f), B(0.0f), C(0);
-
-    s = sqrtf(1 - c * c);
-    K = vec3(s * cosf(phi), s * sinf(phi), c);
-
-    if (fabsf(A.z - 1) < 0.001f)
-        return K;
-    else if (fabsf(A.z + 1) < 0.001f)
-        return vec3(K.x, -K.y, -K.z);
-
-    B = normalize(vec3(-A.y, A.x, 0.0f));
-    C = cross(A, B);
-
-    return K.x * B + K.y * C + K.z * A;
 }

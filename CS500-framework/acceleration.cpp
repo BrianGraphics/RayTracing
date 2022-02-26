@@ -1,5 +1,6 @@
 #include "geom.h"
 #include "acceleration.h"
+#include "Shapes.h"
 
 #include <bvh/sweep_sah_builder.hpp>
 #include <bvh/single_ray_traverser.hpp>
@@ -45,25 +46,23 @@ SimpleBox& SimpleBox::extend(const vec3 v)
 SimpleBox BvhShape::bounding_box() const
 {
     //  Return the shape's bounding box.
-    return SimpleBox(); // FIX THIS
+    return shape->boundingBox;
 }
 
 bvh::Vector3<float> BvhShape::center() const
 {
-    return bounding_box().center();
+    return shape->boundingBox.center();
 }
     
 std::optional<Intersection> BvhShape::intersect(const bvh::Ray<float>& bvhray) const
 {
-    // Intersect RayFromBvh(bvhray) with shape;  store result in an Intersection
-    // If no intersection,
-    //    return std::nullopt;
-    // If intersection's t value < bvhray.tmin  or > bvhray.tmax
-    //    return std::nullopt;
-    // else return
-    //    return the Intersection
-    
-    return Intersection();  // FIX THIS 
+    Intersection ret;
+    if (!shape->Intersect(RayFromBvh(bvhray), ret))
+        return std::nullopt;
+    else if (ret.t < bvhray.tmin || ret.t > bvhray.tmax)
+        return std::nullopt;
+    else
+        return ret;        
 }
 
 AccelerationBvh::AccelerationBvh(std::vector<Shape*> &objs)
@@ -95,6 +94,4 @@ Intersection AccelerationBvh::intersect(const Ray& ray)
     }
     else
         return  Intersection();  // Return an IntersectionRecord which indicates NO-INTERSECTION
-
-
 }

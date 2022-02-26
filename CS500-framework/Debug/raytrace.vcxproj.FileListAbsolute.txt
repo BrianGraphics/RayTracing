@@ -1,1 +1,2 @@
 C:\Users\laugh\OneDrive\Desktop\CS500-framework\Debug\raytrace.exe
+D:\GitHub\GAM541\RayTracing\CS500-framework\Debug\raytrace.exe
