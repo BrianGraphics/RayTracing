@@ -21,7 +21,7 @@ public:
     Ray(vec3 origin, vec3 direction) : Q(origin), D(direction) {}
     vec3 Q;
     vec3 D;
-    //vec3 eval(float t);
+    vec3 eval(float t) { return Q + t * D; }
 };
 
 // Vectors:
@@ -56,18 +56,16 @@ class Shape;
 class Intersection {
 public:
     Intersection() = default;
-    //Intersection(Intersection& i) { t = i.t; shape = i.shape; P = i.P; N = i.N; }
     float distance() const { return t; }  // A function the BVH traversal needs to be supplied.
 
     float t;
     Shape* shape;
     vec3 P;
     vec3 N;
-    bool isIntersect;
 };
 
 // FIX THIS; A dummy class -- just barely enough to compile.
-class Shape;
+//class Shape;
 
 // Wrapper of a single Shape*:
 

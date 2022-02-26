@@ -81,7 +81,9 @@ public:
 //class Realtime;
 class Shape;
 class Ray;
-class Intersection;
+
+#include "acceleration.h"
+
 class Scene {
 public:
     int width, height;
@@ -89,7 +91,8 @@ public:
     Material* currentMat;
     vec3 ambient;
     std::vector<Shape*> vectorOfShapes;
-    std::vector<Material*> Lights;
+    Shape* light;
+    vec3 lightPos;
 
 
     Scene();
@@ -111,10 +114,6 @@ public:
     // and return the image.  This is the Ray Tracer!
     void TraceImage(Color* image, const int pass);
 
-    Color TracePath(Ray ray);
-
+    // Find front most object
     Intersection TraceRay(Ray ray);
-
-
-    vec3 SampleLobe(vec3 A, float c, float phi);
 };

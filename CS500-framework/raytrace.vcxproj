@@ -116,7 +116,8 @@
     </Link>
     <PostBuildEvent>
       <Command>xcopy .\libs\assimp\32\assimp.dll .\Release /Y /D</Command>
-      <Command>xcopy .\libs\glbinding.dll .\Release /Y /D xcopy .\libs\assimp\32\assimp.dll .\Release /Y /D</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -134,6 +135,9 @@
     <ClInclude Include="Intersect.h" />
     <ClInclude Include="geom.h" />
     <ClInclude Include="Shapes.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="testscene.hdr" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
