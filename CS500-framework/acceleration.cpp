@@ -92,6 +92,7 @@ Intersection AccelerationBvh::intersect(const Ray& ray)
     if (hit) {
         return hit->intersection;
     }
-    else
+    else {       
         return  Intersection();  // Return an IntersectionRecord which indicates NO-INTERSECTION
+    }
 }

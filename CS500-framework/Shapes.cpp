@@ -4,7 +4,7 @@
 #include "Shapes.h"
 #include "raytrace.h"
 
-
+float e = 0.0001f;
 
 
 
@@ -14,7 +14,6 @@ Sphere::Sphere(const vec3 c, const float r, Material* mat)
     vec3 rrr(r, r, r);
 
     material = mat;
-    //IntersectionRecord.shape = this;
     boundingBox = SimpleBox(center + rrr);
     boundingBox.extend(center - rrr);
 }
@@ -40,9 +39,9 @@ bool Sphere::Intersect(Ray ray, Intersection& record)
 
         if (t_p < 0.0f && t_m < 0.0f)
             return false;
-        else if (t_m >= 0.0f)
+        else if (t_m >= e)
             t = t_m;
-        else if (t_p >= 0.0f)
+        else if (t_p >= e)
             t = t_p;
         else
             return false;
@@ -105,9 +104,9 @@ bool Cylinder::Intersect(Ray ray, Intersection& record)
 
     if (t0 > t1)
         return false;
-    else if (t0 >= 0)
+    else if (t0 >= e)
         t = t0;
-    else if (t1 >= 0)
+    else if (t1 >= e)
         t = t1;
     else
         return false;
@@ -165,9 +164,9 @@ bool Box::Intersect(Ray ray, Intersection& record)
 
     if (ret.t0 > ret.t1)
         return false;
-    else if (ret.t0 >= 0)
+    else if (ret.t0 >= e)
         t = ret.t0;
-    else if (ret.t1 >= 0)
+    else if (ret.t1 >= e)
         t = ret.t1;
     else
         return false;

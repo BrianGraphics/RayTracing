@@ -31,7 +31,7 @@ std::mt19937_64 RNGen(device());
 std::uniform_real_distribution<> myrandom(0.0, 1.0);
 // Call myrandom(RNGen) to get a uniformly distributed random number in [0,1].
 #define RR 0.8f
-#define random static_cast <float> (rand()) / static_cast <float> (RAND_MAX)
+
 
 Scene::Scene() 
 { 
@@ -127,12 +127,11 @@ void Scene::Command(const std::vector<std::string>& strings,
         // Creates a Shape instance for a sphere defined by a center and radius
         //realtime->sphere(vec3(f[1], f[2], f[3]), f[4], currentMat); 
         Shape* sphere = new Sphere(vec3(f[1], f[2], f[3]), f[4], currentMat);
+        vectorOfShapes.push_back(sphere);
+
         if (currentMat->isLight()) {
-            light = sphere;
+            light = new Sphere(vec3(f[1], f[2], f[3]), f[4], currentMat);
             lightPos = vec3(f[1], f[2], f[3]);
-        }
-        else {
-            vectorOfShapes.push_back(sphere);
         }
     }
 
@@ -174,36 +173,32 @@ void Scene::TraceImage(Color* image, const int pass)
 {
     float rx = camera.ry * width / height;
     float dx = 0.0f, dy = 0.0f;
-    Intersection front;
     vec3 X = rx * transformVector(camera.orientation, Xaxis());
     vec3 Y = camera.ry * transformVector(camera.orientation, Yaxis());
     vec3 Z = transformVector(camera.orientation, Zaxis());
     vec3 L(0);
-    Color color(0);
     AccelerationBvh bvh(vectorOfShapes);
+    Color* tmp = new Color[width * height];
+    for (int y = 0; y < height; y++)
+        for (int x = 0; x < width; x++)
+            tmp[y * width + x] = Color(0, 0, 0);
 
-//#pragma omp parallel for schedule(dynamic, 1) // Magic: Multi-thread y loop
-    for (int y = 0; y < height; y++) {
-        fprintf(stderr, "Rendering %4d\r", y);
-        for (int x = 0; x < width; x++) {
-            dx = 2 * (x + 0.5f) / width - 1;
-            dy = 2 * (y + 0.5f) / height - 1;
-            Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));          
-            front = bvh.intersect(ray);              
-
-            color = vec3(0);
-            L = normalize(lightPos - front.P);
-            color = glm::max(0.0f, dot(glm::abs(front.N), L)) * front.shape->material->Kd;
-            //color = front.P;
-            //color = front.shape->material->Kd;
-            //color = glm::abs(front.N);
-            //color = vec3((front.t -5.0f) / 4.0f);
-            
-            image[y * width + x] = color;
+    for (int i = 0; i < pass; ++i) {
+        #pragma omp parallel for schedule(dynamic, 6) // Magic: Multi-thread y loop
+        for (int y = 0; y < height; y++) {
+            fprintf(stderr, "Rendering %4d\r", y);
+            for (int x = 0; x < width; x++) {               
+                dx = 2 * (x + myrandom(RNGen)) / width - 1;
+                dy = 2 * (y + myrandom(RNGen)) / height - 1;
+                Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
+                tmp[y * width + x] += TracePath(ray, bvh);
+                if (myrandom(RNGen) > RR) image[y * width + x] = tmp[y * width + x] / (float)pass;
+                //image[y * width + x] = tmp[y * width + x] / (float)pass;
+            }
         }
+
+        fprintf(stderr, "\n");
     }
-    
-    fprintf(stderr, "\n");
 }
 
 Intersection Scene::TraceRay(Ray ray) {
@@ -216,4 +211,112 @@ Intersection Scene::TraceRay(Ray ray) {
     }
 
     return front;
+}
+
+Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
+{
+    Color C = Color(0.0, 0.0, 0.0);
+    vec3 W = vec3(1.0, 1.0, 1.0);
+    vec3 L(0.0f), N(0.0f), O_i(0.0f), f(0.0f);
+    float p = 0.0f, NO = 0.0f;
+    Ray new_ray = ray;
+    Intersection recordL;
+ 
+    Intersection P, Q, I;
+    P = bvh.intersect(ray);
+
+    if (P.t != std::numeric_limits<float>::infinity()) {
+        if (P.shape->material->isLight()) {
+            C = P.shape->material->Kd;
+            C = dot(P.N, normalize(lightPos - P.P)) * C / PI;
+            return P.shape->material->Kd; // return EvalRadiance(P)
+        }
+
+        while (myrandom(RNGen) <= RR) {
+            // Explicit light connection
+            recordL = SampleSphere(light, light->center, light->radius);
+            p = 1 / (light->radius * light->radius * 4 * PI) / GeometryFactor(P, recordL);
+            O_i = recordL.P - P.P;
+            new_ray.Q = P.P;
+            new_ray.D = O_i;
+            I = bvh.intersect(new_ray);
+            if (p > 0.0f && I.t != std::numeric_limits<float>::infinity()) {                
+                NO = fabsf(dot(N, O_i));
+                f = I.shape->material->Kd * NO / PI;
+                C += 0.5f * W * f / p * recordL.shape->material->Kd;
+            }
+
+            // Extend path
+            N = P.N;
+            O_i = SampleLobe(N, sqrtf(myrandom(RNGen)), 2 * PI * myrandom(RNGen));
+            new_ray.Q = P.P;
+            new_ray.D = O_i;
+
+            Q = bvh.intersect(new_ray);
+            if (Q.t != std::numeric_limits<float>::infinity()) {
+                NO = fabsf(dot(N, O_i));
+                p = NO / PI * RR;
+                if (p < 0.000001) break;
+
+                f = P.shape->material->Kd * NO / PI;
+                W *= f / p;
+
+                if (Q.shape->material->isLight()) {                  
+                    C += 0.5f * W * Q.shape->material->Kd;
+                    C = dot(P.N, normalize(lightPos - P.P)) * C / PI;
+                    break;
+                }
+
+                P = Q;
+            }
+            else {
+                break;
+            }
+        }
+    }
+    else {
+        // no intersection
+        return C;
+    }
+
+    //C = dot(P.N, normalize(lightPos - P.P)) * P.shape->material->Kd / PI;
+    return C;
+}
+
+vec3 Scene::SampleLobe(vec3 A, float c, float phi) {
+    float s = 0.0f;
+    vec3 K(0.0f), B(0.0f), C(0);
+
+    s = sqrtf(1 - c * c);
+    K = vec3(s * cosf(phi), s * sinf(phi), c);
+
+    if (fabsf(A.z - 1) < 0.001f)
+        return K;
+    else if (fabsf(A.z + 1) < 0.001f)
+        return vec3(K.x, -K.y, -K.z);
+
+    B = normalize(vec3(-A.y, A.x, 0.0f));
+    C = cross(A, B);
+
+    return K.x * B + K.y * C + K.z * A;
+}
+
+Intersection Scene::SampleSphere(Shape* object, vec3 center, float radius)
+{
+    float r1 = myrandom(RNGen), r2 = myrandom(RNGen);
+    float z = 2 * r1 - 1;
+    float r = sqrtf(1 - z * z);
+    float a = 2 * PI * r2;
+    Intersection ret;
+    ret.N = normalize(vec3(r * cos(a), r * sin(a), z));
+    ret.P = center + radius * ret.N;
+    ret.shape = object;
+    return ret;
+}
+
+float Scene::GeometryFactor(const Intersection& A, const Intersection& B)
+{
+    vec3 D = A.P - B.P;
+    float DD = dot(D, D);
+    return fabsf(dot(A.N, D) * dot(B.N, D) / DD / DD);
 }

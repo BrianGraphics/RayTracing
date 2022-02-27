@@ -1,5 +1,5 @@
 ﻿cl : command line warning D9035: option 'Gm' has been deprecated and will be removed in a future release
-  raytrace.cpp
+  main.cpp
 D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(94,1): warning C4141: 'inline': used more than once
 D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(100,1): warning C4141: 'inline': used more than once
 D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(106,1): warning C4141: 'inline': used more than once
@@ -15,9 +15,6 @@ D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(41,13): warni
 D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(50,13): warning C4068: unknown pragma 'STDC'
 D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(163,1): warning C4010: single-line comment contains line-continuation character
 D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(164,1): warning C4010: single-line comment contains line-continuation character
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.h(60,1): warning C4099: 'MeshData': type name first seen using 'class' now seen using 'struct'
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.h(59): message : see declaration of 'MeshData'
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(47,23): warning C4018: '<': signed/unsigned mismatch
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(68,13): warning C4018: '<': signed/unsigned mismatch
-acceleration.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/SAFESEH' specification
+D:\GitHub\GAM541\RayTracing\CS500-framework\main.cpp(50,54): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\main.cpp(82,18): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
   raytrace.vcxproj -> D:\GitHub\GAM541\RayTracing\CS500-framework\Debug\raytrace.exe

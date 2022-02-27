@@ -58,7 +58,7 @@ public:
     Intersection() = default;
     float distance() const { return t; }  // A function the BVH traversal needs to be supplied.
 
-    float t;
+    float t = std::numeric_limits<float>::infinity();
     Shape* shape;
     vec3 P;
     vec3 N;

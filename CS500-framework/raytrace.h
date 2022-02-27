@@ -80,6 +80,7 @@ public:
 // Scene
 //class Realtime;
 class Shape;
+class Sphere;
 class Ray;
 
 #include "acceleration.h"
@@ -91,7 +92,7 @@ public:
     Material* currentMat;
     vec3 ambient;
     std::vector<Shape*> vectorOfShapes;
-    Shape* light;
+    Sphere* light;
     vec3 lightPos;
 
 
@@ -116,4 +117,12 @@ public:
 
     // Find front most object
     Intersection TraceRay(Ray ray);
+
+    Color TracePath(Ray& ray, AccelerationBvh& bvh);
+
+    vec3 SampleLobe(vec3 A, float c, float phi);
+    
+    Intersection SampleSphere(Shape* object, vec3 center, float radius);
+
+    float GeometryFactor(const Intersection& A, const Intersection& B);
 };
