@@ -225,45 +225,43 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     Intersection P, Q, I;
     P = bvh.intersect(ray);
 
-    if (P.t != std::numeric_limits<float>::infinity()) {
+    if (P.isIntersect) {
         if (P.shape->material->isLight()) {
-            C = P.shape->material->Kd;
-            C = dot(P.N, normalize(lightPos - P.P)) * C / PI;
             return P.shape->material->Kd; // return EvalRadiance(P)
         }
 
         while (myrandom(RNGen) <= RR) {
+            N = P.N;
+
             // Explicit light connection
             recordL = SampleSphere(light, light->center, light->radius);
-            p = 1 / (light->radius * light->radius * 4 * PI) / GeometryFactor(P, recordL);
-            O_i = recordL.P - P.P;
+            p = 1 / (4 * PI * light->radius * light->radius) / GeometryFactor(P, recordL);
+            O_i = normalize(recordL.P - P.P);
             new_ray.Q = P.P;
-            new_ray.D = O_i;
+            new_ray.D = O_i;           
             I = bvh.intersect(new_ray);
-            if (p > 0.0f && I.t != std::numeric_limits<float>::infinity()) {                
+            if (p > 0.0f && I.isIntersect) {
                 NO = fabsf(dot(N, O_i));
-                f = I.shape->material->Kd * NO / PI;
+                f = NO * P.shape->material->Kd / PI;
                 C += 0.5f * W * f / p * recordL.shape->material->Kd;
             }
 
             // Extend path
-            N = P.N;
-            O_i = SampleLobe(N, sqrtf(myrandom(RNGen)), 2 * PI * myrandom(RNGen));
+            O_i = normalize(SampleLobe(N, sqrtf(myrandom(RNGen)), 2 * PI * myrandom(RNGen)));
             new_ray.Q = P.P;
             new_ray.D = O_i;
 
             Q = bvh.intersect(new_ray);
-            if (Q.t != std::numeric_limits<float>::infinity()) {
+            if (Q.isIntersect) {
                 NO = fabsf(dot(N, O_i));
                 p = NO / PI * RR;
                 if (p < 0.000001) break;
 
-                f = P.shape->material->Kd * NO / PI;
+                f = NO * P.shape->material->Kd / PI;
                 W *= f / p;
 
                 if (Q.shape->material->isLight()) {                  
-                    C += 0.5f * W * Q.shape->material->Kd;
-                    C = dot(P.N, normalize(lightPos - P.P)) * C / PI;
+                    C += 0.5f * W * Q.shape->material->Kd;                    
                     break;
                 }
 
@@ -279,7 +277,6 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         return C;
     }
 
-    //C = dot(P.N, normalize(lightPos - P.P)) * P.shape->material->Kd / PI;
     return C;
 }
 
@@ -308,9 +305,10 @@ Intersection Scene::SampleSphere(Shape* object, vec3 center, float radius)
     float r = sqrtf(1 - z * z);
     float a = 2 * PI * r2;
     Intersection ret;
-    ret.N = normalize(vec3(r * cos(a), r * sin(a), z));
+    ret.N = normalize(vec3(r * cosf(a), r * sinf(a), z));
     ret.P = center + radius * ret.N;
     ret.shape = object;
+    ret.isIntersect = true;
     return ret;
 }
 
