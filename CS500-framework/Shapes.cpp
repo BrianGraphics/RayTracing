@@ -48,6 +48,7 @@ bool Sphere::Intersect(Ray ray, Intersection& record)
             return false;
     }
 
+    record.isIntersect = true;
     record.shape = this;
     record.t = t;
     record.P = Q + t * D;
@@ -112,6 +113,7 @@ bool Cylinder::Intersect(Ray ray, Intersection& record)
     else
         return false;
 
+    record.isIntersect = true;
     record.shape = this;
     record.t = t;
     record.P = ray.Q + t * ray.D;
@@ -172,6 +174,7 @@ bool Box::Intersect(Ray ray, Intersection& record)
     else
         return false;
 
+    record.isIntersect = true;
     record.shape = this;
     record.t = t;
     record.P = Q + t * D;
@@ -210,6 +213,7 @@ bool Triangle::Intersect(Ray ray, Intersection& record)
     t = dot(E2, q) / d;
     if(t < 0) { record.t = -1.0f; return false; }
 
+    record.isIntersect = true;
     record.shape = this;
     record.t = t;
     record.N = (1 - u - v) * normal[0] + u * normal[1] + v * normal[2];

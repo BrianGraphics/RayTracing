@@ -181,32 +181,39 @@ void Scene::TraceImage(Color* image, const int pass)
     vec3 L(0);
     Color color(0);
     AccelerationBvh bvh(vectorOfShapes);
+    Ray ray(vec3(0), vec3(0));
 
-//#pragma omp parallel for schedule(dynamic, 1) // Magic: Multi-thread y loop
+#pragma omp parallel for schedule(dynamic, 12) // Magic: Multi-thread y loop
     for (int y = 0; y < height; y++) {
         fprintf(stderr, "Rendering %4d\r", y);
         for (int x = 0; x < width; x++) {
             dx = 2 * (x + 0.5f) / width - 1;
             dy = 2 * (y + 0.5f) / height - 1;
-            Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));          
-            front = bvh.intersect(ray);              
+            ray.Q = camera.eye;
+            ray.D = normalize(dx * X + dy * Y - Z);          
+            front = bvh.intersect(ray);
+            //front = TraceRay(ray);
 
-            color = vec3(0);
-            L = normalize(lightPos - front.P);
-            color = glm::max(0.0f, dot(glm::abs(front.N), L)) * front.shape->material->Kd;
-            //color = front.P;
-            //color = front.shape->material->Kd;
-            //color = glm::abs(front.N);
-            //color = vec3((front.t -5.0f) / 4.0f);
-            
-            image[y * width + x] = color;
+            if (front.isIntersect) {                
+                L = normalize(lightPos - front.P);
+                color = glm::max(0.0f, dot(glm::abs(front.N), L)) * front.shape->material->Kd;
+                //color = front.P;
+                //color = front.shape->material->Kd;
+                //color = glm::abs(front.N);
+                //color = vec3((front.t -5.0f) / 4.0f);
+
+             
+            }
+
+            image[y * width + x] = color;    
+            //color = vec3(0.0f);
         }
     }
     
     fprintf(stderr, "\n");
 }
 
-Intersection Scene::TraceRay(Ray ray) {
+Intersection Scene::TraceRay(const Ray& ray) {
     Intersection front, current;
     front.t = std::numeric_limits<float>::infinity();
     for (auto shape : vectorOfShapes) {     

@@ -115,5 +115,5 @@ public:
     void TraceImage(Color* image, const int pass);
 
     // Find front most object
-    Intersection TraceRay(Ray ray);
+    Intersection TraceRay(const Ray& ray);
 };

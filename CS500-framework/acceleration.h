@@ -62,6 +62,7 @@ public:
     Shape* shape;
     vec3 P;
     vec3 N;
+    bool isIntersect = false;
 };
 
 // FIX THIS; A dummy class -- just barely enough to compile.

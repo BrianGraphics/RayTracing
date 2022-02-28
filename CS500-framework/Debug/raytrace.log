@@ -19,5 +19,4 @@ D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.h(60,1): warning C4099: 'Me
 D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.h(59): message : see declaration of 'MeshData'
 D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(47,23): warning C4018: '<': signed/unsigned mismatch
 D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(68,13): warning C4018: '<': signed/unsigned mismatch
-acceleration.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/SAFESEH' specification
   raytrace.vcxproj -> D:\GitHub\GAM541\RayTracing\CS500-framework\Debug\raytrace.exe
