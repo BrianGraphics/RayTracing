@@ -184,7 +184,7 @@ void Scene::TraceImage(Color* image, const int pass)
             tmp[y * width + x] = Color(0, 0, 0);
 
     for (int i = 0; i < pass; ++i) {       
-        #pragma omp parallel for schedule(dynamic, 12) // Magic: Multi-thread y loop
+        #pragma omp parallel for schedule(dynamic, 1) // Magic: Multi-thread y loop
         for (int y = 0; y < height; y++) {
             fprintf(stderr, "Rendering %4d\r", y);
             for (int x = 0; x < width; x++) {               
@@ -240,7 +240,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
             new_ray.Q = P.P;
             new_ray.D = O_i;           
             I = bvh.intersect(new_ray);
-            if (p > 0.0f && I.isIntersect) {
+            if (p > 0.0f && I.isIntersect && I.shape == light) {
                 NO = fabsf(dot(N, O_i));
                 f = NO * P.shape->material->Kd / PI;
                 C += 0.5f * W * f / p * recordL.shape->material->Kd;
