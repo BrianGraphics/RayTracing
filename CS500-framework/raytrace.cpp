@@ -178,6 +178,7 @@ void Scene::TraceImage(Color* image, const int pass)
     vec3 Z = transformVector(camera.orientation, Zaxis());
     vec3 L(0);
     AccelerationBvh bvh(vectorOfShapes);
+    //Intersection front;
     Color* tmp = new Color[width * height];
     for (int y = 0; y < height; y++)
         for (int x = 0; x < width; x++)
@@ -192,6 +193,9 @@ void Scene::TraceImage(Color* image, const int pass)
                 dy = 2 * (y + myrandom(RNGen)) / height - 1;
                 Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
                 tmp[y * width + x] += TracePath(ray, bvh);
+                //front = TraceRay(ray);
+                //L = normalize(lightPos - front.P);
+                //tmp[y * width + x] +=  fabsf(dot(front.N, L)) * front.shape->material->Kd / PI;
                 if (myrandom(RNGen) > RR) image[y * width + x] = tmp[y * width + x] / (float)pass;
                 //image[y * width + x] = tmp[y * width + x] / (float)pass;
             }
