@@ -116,7 +116,7 @@ bool Cylinder::Intersect(Ray ray, Intersection& record)
     record.isIntersect = true;
     record.shape = this;
     record.t = t;
-    record.P = ray.Q + t * ray.D;
+    record.P = ray.eval(t);
     record.N = t == t0 ? intervalA.N0 : intervalA.N1;
     record.N = normalize(t_R * record.N);
 
