@@ -173,6 +173,7 @@ void Scene::TraceImage(Color* image, const int pass)
 {
     float rx = camera.ry * width / height;
     float dx = 0.0f, dy = 0.0f;
+    int index = 0;
     vec3 X = rx * transformVector(camera.orientation, Xaxis());
     vec3 Y = camera.ry * transformVector(camera.orientation, Yaxis());
     vec3 Z = transformVector(camera.orientation, Zaxis());
@@ -192,6 +193,7 @@ void Scene::TraceImage(Color* image, const int pass)
                 dx = 2 * (x + myrandom(RNGen)) / width - 1;
                 dy = 2 * (y + myrandom(RNGen)) / height - 1;
                 Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
+                
                 tmp[y * width + x] += TracePath(ray, bvh);
                 //front = TraceRay(ray);
                 //L = normalize(lightPos - front.P);
@@ -226,7 +228,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     Ray new_ray = ray;
     Intersection recordL;
  
-    Intersection P, Q, I;
+    Intersection P, I;
     P = bvh.intersect(ray);
 
     if (P.isIntersect) {
@@ -238,34 +240,37 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
             N = P.N;
 
             // Explicit light connection
-            recordL = SampleSphere(light, light->center, light->radius);
-            p = 1 / (4 * PI * light->radius * light->radius) / GeometryFactor(P, recordL);
-            O_i = normalize(recordL.P - P.P);
-            new_ray.Q = P.P;
-            new_ray.D = O_i;           
-            I = bvh.intersect(new_ray);
-            if (p > 0.0f && I.isIntersect && I.shape == light) {
-                NO = fabsf(dot(N, O_i));
-                f = NO * P.shape->material->Kd / PI;
-                C += 0.5f * W * f / p * recordL.shape->material->Kd;
-            }
+            //recordL = SampleSphere(light, light->center, light->radius);
+            //p = 1 / (4 * PI * light->radius * light->radius) / GeometryFactor(P, recordL);
+            //O_i = normalize(recordL.P - P.P);
+            //new_ray.Q = P.P;
+            //new_ray.D = O_i;           
+            //I = bvh.intersect(new_ray);
+            //if (p > 0.0f && I.isIntersect && I.N == recordL.N) {
+            //    NO = fabsf(dot(N, O_i));
+            //    f = NO * P.shape->material->Kd / PI;
+            //    C += 0.5f * W * f / p * vec3(5.0f, 5.0f, 5.0f);
+            //}
+            //else if (!I.isIntersect) {
+            //    fprintf(stderr, "no intersect\n");
+            //}
 
             // Extend path
             O_i = normalize(SampleLobe(N, sqrtf(myrandom(RNGen)), 2 * PI * myrandom(RNGen)));
-            new_ray.Q = P.P;
-            new_ray.D = O_i;
+            new_ray = Ray(P.P, O_i);
 
-            Q = bvh.intersect(new_ray);
+            Intersection Q = bvh.intersect(new_ray);
             if (Q.isIntersect) {
                 NO = fabsf(dot(N, O_i));
+                f = NO * P.shape->material->Kd / PI;
                 p = NO / PI * RR;
                 if (p < 0.000001) break;
 
-                f = NO * P.shape->material->Kd / PI;
+                
                 W *= f / p;
 
                 if (Q.shape->material->isLight()) {                  
-                    C += 0.5f * W * Q.shape->material->Kd;                    
+                    C += 0.5f * W * Q.shape->material->Kd;  
                     break;
                 }
 

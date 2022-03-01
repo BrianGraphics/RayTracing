@@ -95,7 +95,6 @@ public:
     Sphere* light;
     vec3 lightPos;
 
-
     Scene();
     void Finit();
 
