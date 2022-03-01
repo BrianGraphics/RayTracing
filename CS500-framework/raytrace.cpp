@@ -174,16 +174,16 @@ void Scene::TraceImage(Color* image, const int pass)
 {
     float rx = camera.ry * width / height;
     float dx = 0.0f, dy = 0.0f;
-    Intersection front;
     vec3 X = rx * transformVector(camera.orientation, Xaxis());
     vec3 Y = camera.ry * transformVector(camera.orientation, Yaxis());
     vec3 Z = transformVector(camera.orientation, Zaxis());
     vec3 L(0);
     Color color(0);
+    Intersection front;
     AccelerationBvh bvh(vectorOfShapes);
     Ray ray(vec3(0), vec3(0));
 
-#pragma omp parallel for schedule(dynamic, 12) // Magic: Multi-thread y loop
+#pragma omp parallel for schedule(dynamic, 1) // Magic: Multi-thread y loop
     for (int y = 0; y < height; y++) {
         fprintf(stderr, "Rendering %4d\r", y);
         for (int x = 0; x < width; x++) {
@@ -206,7 +206,8 @@ void Scene::TraceImage(Color* image, const int pass)
             }
 
             image[y * width + x] = color;    
-            //color = vec3(0.0f);
+            color = vec3(0.0f);
+            front.isIntersect = false;
         }
     }
     

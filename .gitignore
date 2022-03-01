@@ -10,3 +10,7 @@ CS500-framework/.vs/raytrace/v16/Browse.VC.opendb
 CS500-framework/.vs/raytrace/v16/Browse.VC.db-wal
 CS500-framework/.vs/raytrace/v16/Browse.VC.db-shm
 CS500-framework/.vs/raytrace/v16/.suo
+*.ipch
+*.obj
+*.pdb
+*.tlog
