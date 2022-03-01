@@ -183,8 +183,8 @@ void Scene::TraceImage(Color* image, const int pass)
         for (int x = 0; x < width; x++)
             tmp[y * width + x] = Color(0, 0, 0);
 
-    for (int i = 0; i < pass; ++i) {
-        #pragma omp parallel for schedule(dynamic, 6) // Magic: Multi-thread y loop
+    for (int i = 0; i < pass; ++i) {       
+        #pragma omp parallel for schedule(dynamic, 12) // Magic: Multi-thread y loop
         for (int y = 0; y < height; y++) {
             fprintf(stderr, "Rendering %4d\r", y);
             for (int x = 0; x < width; x++) {               

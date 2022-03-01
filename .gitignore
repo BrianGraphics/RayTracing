@@ -27,3 +27,6 @@ CS500-framework/.vs/raytrace/v16/.suo
 *.obj
 *.log
 *.hdr
+CS500-framework/testscene.hdr
+CS500-framework/Debug/vc142.idb
+CS500-framework/Debug/vc142.pdb
