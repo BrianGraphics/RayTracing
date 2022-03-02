@@ -65,8 +65,8 @@ Cylinder::Cylinder(const vec3 base, const vec3 axis, const float r, Material* ma
     material = mat;
     boundingBox = SimpleBox(B + rrr);
     boundingBox.extend(B - rrr);
-    boundingBox.extend(A + B - rrr);
     boundingBox.extend(A + B + rrr);
+    boundingBox.extend(A + B - rrr);
 }
 
 bool Cylinder::Intersect(Ray ray, Intersection& record)

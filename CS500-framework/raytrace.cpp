@@ -196,7 +196,7 @@ void Scene::TraceImage(Color* image, const int pass)
 
             if (front.isIntersect) {                
                 L = normalize(lightPos - front.P);
-                color = glm::max(0.0f, dot(glm::abs(front.N), L)) * front.shape->material->Kd;
+                color =  glm::abs(dot(front.N, L)) * front.shape->material->Kd * light->material->Kd;
                 //color = front.P;
                 //color = front.shape->material->Kd;
                 //color = glm::abs(front.N);
