@@ -55,14 +55,15 @@ Ray RayFromBvh(const bvh::Ray<float> &r);
 class Shape;
 class Intersection {
 public:
-    Intersection() = default;
+    Intersection() { t = std::numeric_limits<float>::infinity(); shape = nullptr; isIntersect = false; }
+    Intersection(const Intersection& other) { t = other.t; shape = other.shape; P = other.P; N = other.N; isIntersect = other.isIntersect; }
     float distance() const { return t; }  // A function the BVH traversal needs to be supplied.
 
     float t;
     Shape* shape;
     vec3 P;
     vec3 N;
-    bool isIntersect = false;
+    bool isIntersect;
 };
 
 // FIX THIS; A dummy class -- just barely enough to compile.

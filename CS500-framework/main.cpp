@@ -99,8 +99,8 @@ int main(int argc, char** argv)
     Scene* scene = new Scene();
 
     // Read the command line argument
-    //std::string inName =  (argc > 1) ? argv[1] : "testscene.scn";
     std::string inName =  (argc > 1) ? argv[1] : "testscene.scn";
+    //std::string inName =  (argc > 1) ? argv[1] : "testleg.scn";
     std::string hdrName = inName;
 
     hdrName.replace(hdrName.size()-3, hdrName.size(), "hdr");
