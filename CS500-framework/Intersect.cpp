@@ -47,7 +47,7 @@ void Interval::Intersect(Ray ray, Slab slab)
 	NdotD = glm::dot(N, D);
 
 	// not sure
-	N0 = -N;
+	N0 = N;
 	N1 = N;
 
 	if (NdotD != 0) {

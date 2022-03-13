@@ -172,16 +172,15 @@ void Scene::Command(const std::vector<std::string>& strings,
 
 void Scene::TraceImage(Color* image, const int pass)
 {
-    float rx = camera.ry * width / height;
+    const float rx = camera.ry * width / height;
     float dx = 0.0f, dy = 0.0f;
-    vec3 X = rx * transformVector(camera.orientation, Xaxis());
-    vec3 Y = camera.ry * transformVector(camera.orientation, Yaxis());
-    vec3 Z = transformVector(camera.orientation, Zaxis());
+    const vec3 X = rx * transformVector(camera.orientation, Xaxis());
+    const vec3 Y = camera.ry * transformVector(camera.orientation, Yaxis());
+    const vec3 Z = transformVector(camera.orientation, Zaxis());
     vec3 L(0);
     Color color(0);
     Intersection front;
     AccelerationBvh bvh(vectorOfShapes);
-    Ray ray(vec3(0), vec3(0));
 
 #pragma omp parallel for schedule(dynamic, 1) // Magic: Multi-thread y loop
     for (int y = 0; y < height; y++) {
@@ -189,20 +188,16 @@ void Scene::TraceImage(Color* image, const int pass)
         for (int x = 0; x < width; x++) {
             dx = 2 * (x + 0.5f) / width - 1;
             dy = 2 * (y + 0.5f) / height - 1;
-            ray.Q = camera.eye;
-            ray.D = normalize(dx * X + dy * Y - Z);          
+            const Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
             front = bvh.intersect(ray);
-            //front = TraceRay(ray);
 
             if (front.isIntersect) {                
                 L = normalize(lightPos - front.P);
-                color =  glm::abs(dot(front.N, L)) * front.shape->material->Kd * light->material->Kd;
+                color =  glm::max(dot(front.N, L), 0.0f) * front.shape->material->Kd / PI;
                 //color = front.P;
                 //color = front.shape->material->Kd;
                 //color = glm::abs(front.N);
-                //color = vec3((front.t -5.0f) / 4.0f);
-
-             
+                //color = vec3((front.t -5.0f) / 4.0f);             
             }
 
             image[y * width + x] = color;    
