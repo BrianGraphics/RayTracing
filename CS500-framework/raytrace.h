@@ -15,6 +15,7 @@ class Material
     unsigned int texid;
 
     virtual bool isLight() { return false; }
+    virtual vec3 EvalRadiance() { return Kd; }
 
     Material()  : Kd(vec3(1.0, 0.5, 0.0)), Ks(vec3(1,1,1)), alpha(1.0), texid(0) {}
     Material(const vec3 d, const vec3 s, const float a) 
@@ -72,7 +73,6 @@ public:
 
     Light(const vec3 e) : Material() { Kd = e; }
     virtual bool isLight() { return true; }
-    //vec3 Radiance() { return Kd; }
     //virtual void apply(const unsigned int program);
 };
 
@@ -118,8 +118,6 @@ public:
     Intersection TraceRay(Ray ray);
 
     Color TracePath(Ray& ray, AccelerationBvh& bvh);
-
-    vec3 SampleLobe(vec3 A, float c, float phi);
     
     Intersection SampleSphere(Shape* object, vec3 center, float radius);
 

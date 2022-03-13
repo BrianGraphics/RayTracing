@@ -76,14 +76,16 @@ bool Cylinder::Intersect(Ray ray, Intersection& record)
     mat3 t_R = rotateToZ(A, true);
     vec3 Q = R * (ray.Q - B);
     vec3 D = R * ray.D;
-    const Slab slab(vec3(0.0, 0.0, 1.0), 0, -1.0f * length(axis));
+    //const Slab slab(vec3(0.0, 0.0, 1.0), 0, -1.0f * length(axis));
+    const Slab slab(vec3(0.0, 0.0, 1.0), 0, -1.0f * length(A));
     Interval intervalA, intervalB;
     Ray t_ray(Q, D);
     record.isIntersect = false;
-    intervalA.Intersect(t_ray, slab);
+    intervalA = intervalA.Intersect(t_ray, slab);
 
     float a = 0.0f, b = 0.0f, c = 0.0f, dis = 0.0f,
           t0 = 0.0f, t1 = 0.0f, t = 0.0f;
+
     a = D.x * D.x + D.y * D.y;
     b = 2 * (D.x * Q.x + D.y * Q.y);
     c = Q.x * Q.x + Q.y * Q.y - radius * radius;
@@ -116,10 +118,9 @@ bool Cylinder::Intersect(Ray ray, Intersection& record)
     record.isIntersect = true;
     record.shape = this;
     record.t = t;
-    record.P = ray.Q + t * ray.D;
+    record.P = ray.eval(t);
     record.N = t == t0 ? intervalA.N0 : intervalA.N1;
     record.N = normalize(t_R * record.N);
-
     return true;
 }
 
@@ -153,24 +154,19 @@ bool Box::Intersect(Ray ray, Intersection& record)
     std::vector<Interval> intervals;
     const vec3 Q = ray.Q, D = ray.D;
     float t = 0.0f;
+    Interval interval;
     record.isIntersect = false;
 
-    for (auto it = slabs.begin(); it != slabs.end(); ++it) {
-        Interval interval;
-        interval.Intersect(ray, *it);
-        intervals.push_back(interval);
-    }
+    for (int i = 0; i < 3; ++i) intervals.push_back(interval.Intersect(ray, slabs[i]));
 
     Interval ret;
-    for (Interval it : intervals) {
-        ret.Intersect(it);
-    }
+    for (int i = 0; i < 3; ++i) ret.Intersect(intervals[i]);
 
     if (ret.t0 > ret.t1)
         return false;
-    else if (ret.t0 >= e)
+    else if (ret.t0 > e)
         t = ret.t0;
-    else if (ret.t1 >= e)
+    else if (ret.t1 > e)
         t = ret.t1;
     else
         return false;
@@ -178,7 +174,7 @@ bool Box::Intersect(Ray ray, Intersection& record)
     record.isIntersect = true;
     record.shape = this;
     record.t = t;
-    record.P = Q + t * D;
+    record.P = ray.eval(t);
     record.N = t == ret.t0 ? ret.N0 : ret.N1;
     
     return true;
@@ -200,7 +196,6 @@ bool Triangle::Intersect(Ray ray, Intersection& record)
     const vec3 E1 = V1 - V0, E2 = V2 - V0, S = Q - V0;
     vec3 p = cross(D, E2), q = vec3(0);
     float d = 0.0f, u = 0.0f, v = 0.0f, t = 0.0f;
-    record.isIntersect = false;
 
     d = dot(p, E1);
     if (d == 0.0f) { return false; }
@@ -210,16 +205,16 @@ bool Triangle::Intersect(Ray ray, Intersection& record)
 
     q = cross(S, E1);
     v = dot(D, q) / d;
-
+    
     if(v < 0 || u + v > 1) { return false; }
     t = dot(E2, q) / d;
-    if(t < 0) { return false; }
+    if(t < e) { return false; }
 
     record.isIntersect = true;
     record.shape = this;
     record.t = t;
     record.N = (1 - u - v) * normal[0] + u * normal[1] + v * normal[2];
-    record.P = Q + t * D;
+    record.P = ray.eval(t);
 
     return true;
 }

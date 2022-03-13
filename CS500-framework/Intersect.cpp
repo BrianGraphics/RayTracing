@@ -27,8 +27,8 @@ Interval::Interval(float _t0, float _t1, vec3 _N0, vec3 _N1)
 
 void Interval::empty()
 {
-	t0 =  1.0f;
-	t1 =  0.0f;
+	t0 =  0.0f;
+	t1 =  -1.0f;
 }
 
 void Interval::Intersect(Interval other)
@@ -39,36 +39,41 @@ void Interval::Intersect(Interval other)
 	N1 = t1 == other.t1 ? other.N1 : N1;
 }
 
-void Interval::Intersect(Ray ray, Slab slab)
+Interval Interval::Intersect(Ray ray, Slab slab)
 {
+	Interval ret;
 	vec3 Q = ray.Q, D = ray.D, N = slab.N;
 	float d0 = slab.d0, d1 = slab.d1;
     float s0 = 0.0f, s1 = 0.0f, NdotD = 0.0f, NdotQ = 0.0f;
 	NdotD = glm::dot(N, D);
 
 	// not sure
-	N0 = -N;
-	N1 = N;
+	ret.N0 = -N;
+	ret.N1 = N;
 
 	if (NdotD != 0) {
 		NdotQ = glm::dot(N, Q);
-		t0 = (-1.0) * (d0 + NdotQ) / NdotD;
-		t1 = (-1.0) * (d1 + NdotQ) / NdotD;
+		ret.t0 = (-d0 - NdotQ) / NdotD;
+		ret.t1 = (-d1 - NdotQ) / NdotD;
 
-		if (t0 > t1) std::swap(t0, t1);
+		if (ret.t0 > ret.t1) std::swap(ret.t0, ret.t1);
 	}
 	else {
 		NdotQ = glm::dot(N, Q);
 		s0 = NdotQ + d0;
 		s1 = NdotQ + d1;
-		if (s0 * s1 < 0 && s0 != s1) {
-			t0 = 0;
-			t1 = std::numeric_limits<float>::infinity();
+		if ((s0 > 0 && s1 < 0) || (s0 < 0 && s1 > 0)) {
+			ret.t0 = 0.0f;
+			ret.t1 = std::numeric_limits<float>::infinity();
 		}
 		else {
-			empty();
+			ret.t0 = 1.0f;
+			ret.t1 = 0.0f;
 		}
 	}
+
+
+	return ret;
 }
 
 

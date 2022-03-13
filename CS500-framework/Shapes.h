@@ -16,7 +16,7 @@ public:
 class Box : public Shape {
 public:
     Box(const vec3 base, const vec3 diag, Material* mat);
-    bool Intersect(Ray ray, Intersection& record);
+    bool Intersect(Ray ray, Intersection& record) override;
     std::vector<Slab> slabs;
 
     vec3 corner;
@@ -26,7 +26,7 @@ public:
 class Cylinder : public Shape {
 public:
     Cylinder(const vec3 base, const vec3 axis, const float r, Material* mat);
-    bool Intersect(Ray ray, Intersection& record);
+    bool Intersect(Ray ray, Intersection& record) override;
     mat3 rotateToZ(vec3 _A, bool reverse);
     vec3 A;
     vec3 B;
@@ -36,7 +36,7 @@ public:
 class Sphere : public Shape {
 public:
     Sphere(const vec3 c, const float r, Material* mat);
-    bool Intersect(Ray ray, Intersection& record);
+    bool Intersect(Ray ray, Intersection& record) override;
 
 public:
     vec3 center;
@@ -46,7 +46,7 @@ public:
 class Triangle : public Shape {
 public:
     Triangle(std::vector<vec3> tri, std::vector<vec3> nrm);
-    bool Intersect(Ray ray, Intersection& record);
+    bool Intersect(Ray ray, Intersection& record) override;
     std::vector<vec3> triangle;
     std::vector<vec3> normal;
 };

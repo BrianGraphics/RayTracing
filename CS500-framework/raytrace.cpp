@@ -30,8 +30,9 @@ std::random_device device;
 std::mt19937_64 RNGen(device());
 std::uniform_real_distribution<> myrandom(0.0, 1.0);
 // Call myrandom(RNGen) to get a uniformly distributed random number in [0,1].
-#define RR 0.8f
 
+// functions
+vec3 SampleLobe(vec3 A, float c, float phi);
 
 Scene::Scene() 
 { 
@@ -56,7 +57,7 @@ void Scene::triangleMesh(MeshData* mesh)
         nrm.push_back(mesh->vertices[index.z].nrm);
         Shape* triangle = new Triangle(tri, nrm);
         triangle->material = mesh->mat;
-        vectorOfShapes.push_back(triangle);
+        vectorOfShapes.push_back(triangle);       
     }
 }
 
@@ -171,14 +172,13 @@ void Scene::Command(const std::vector<std::string>& strings,
 
 void Scene::TraceImage(Color* image, const int pass)
 {
-    float rx = camera.ry * width / height;
+    float rx = camera.ry * static_cast<float>(width) / static_cast<float>(height);
     float dx = 0.0f, dy = 0.0f;
-    float rr = 0.8f;
-    int index = 0;
-    vec3 X = rx * transformVector(camera.orientation, Xaxis());
-    vec3 Y = camera.ry * transformVector(camera.orientation, Yaxis());
-    vec3 Z = transformVector(camera.orientation, Zaxis());
-    vec3 L(0);
+    const float rr = 0.8f;
+    const vec3 X = rx * transformVector(camera.orientation, Xaxis());
+    const vec3 Y = camera.ry * transformVector(camera.orientation, Yaxis());
+    const vec3 Z = transformVector(camera.orientation, Zaxis());
+
     AccelerationBvh bvh(vectorOfShapes);
     //Intersection front;
     Color* tmp = new Color[width * height];
@@ -191,12 +191,12 @@ void Scene::TraceImage(Color* image, const int pass)
         for (int y = 0; y < height; y++) {
             fprintf(stderr, "Rendering %4d\r", y);
             for (int x = 0; x < width; x++) {               
-                dx = 2 * (x + myrandom(RNGen)) / width - 1;
-                dy = 2 * (y + myrandom(RNGen)) / height - 1;
+                dx = 2 * (x + myrandom(RNGen)) / width - 1.0f;
+                dy = 2 * (y + myrandom(RNGen)) / height - 1.0f;
                 Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
-                
-                tmp[y * width + x] += TracePath(ray, bvh);
-                if (myrandom(RNGen) > rr) image[y * width + x] = tmp[y * width + x] / (float)pass;
+                int index = y * width + x;
+                tmp[index] += TracePath(ray, bvh);
+                if (myrandom(RNGen) > rr) image[index] = tmp[index] / static_cast<float>(pass);
             }
         }
 
@@ -207,6 +207,7 @@ void Scene::TraceImage(Color* image, const int pass)
 Intersection Scene::TraceRay(Ray ray) {
     Intersection front, current;
     front.t = std::numeric_limits<float>::infinity();
+    front.isIntersect = false;
     for (auto shape : vectorOfShapes) {     
         if (shape->Intersect(ray, current))
             if (front.t > current.t)
@@ -220,80 +221,84 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
 {
     Color C = Color(0.0f, 0.0f, 0.0f);
     vec3 W = vec3(1.0f, 1.0f, 1.0f);
-    vec3 L(0.0f), N(0.0f), O_i(0.0f), f(0.0f);
-    float p = 0.0f, NO = 0.0f, rr = 0.8f;
-    //Ray new_ray = ray;
-    Intersection recordL;
+    vec3 N(0.0f), O_i(0.0f), f(0.0f);
+    float p = 0.0f, NO = 0.0f;
+    const float rr = 0.8f;
+    Intersection L;
  
-    Intersection P, Q, I;
+    Intersection P, Q;
     P = bvh.intersect(ray);
     //P = TraceRay(ray);
-    N = P.N;
 
-    if (P.isIntersect) {
-        if (P.shape->material->isLight()) {
-            return P.shape->material->Kd; // return EvalRadiance(P)
-        }
+    if (!P.isIntersect) return C;
 
-        while (myrandom(RNGen) <= rr) {
-
-            //Explicit light connection
-            //recordL = SampleSphere(light, light->center, light->radius);
-            //p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, recordL);
-            //O_i = normalize(recordL.P - P.P);
-            //Ray new_ray1(P.P, O_i);
-            //I = bvh.intersect(new_ray1);
-            ////I = TraceRay(new_ray1);
-            //if (p > 0.0f && I.isIntersect && I.P == recordL.P) {
-            //    NO = fabsf(dot(N, O_i));
-            //    f = NO * P.shape->material->Kd / PI;
-            //    C += 0.5f * W * (f / p) * vec3(5.0f, 5.0f, 5.0f);
-            //    return C;
-            //}
-
-            // Extend path
-            N = P.N;
-            O_i = SampleLobe(N, sqrtf(myrandom(RNGen)), 2 * PI * myrandom(RNGen));
-            Ray new_ray2(P.P, O_i);
-
-            Q = bvh.intersect(new_ray2);
-            if (!Q.isIntersect) break;
-
-            NO = fabsf(dot(N, O_i));
-            f = NO * (P.shape->material->Kd / PI);
-            p = (NO / PI) * rr;
-            if (p < 0.000001) break;
-                
-            W = W * f / p;
-
-            if (Q.shape->material->isLight()) {                  
-                C += 0.5f * W * vec3(5.0f, 5.0f, 5.0f);
-                break;
-            }
-
-            P = Q;
-            N = P.N;
-            
-        }
+    if (P.shape->material->isLight()) {
+        return P.shape->material->Kd; // return EvalRadiance(P)
     }
-    else {
-        // no intersection
-        return C;
+
+
+    while (myrandom(RNGen) <= rr) {
+        N = P.N;
+        //Explicit light connection
+        L = SampleSphere(light, light->center, light->radius);        
+        O_i = normalize(L.P - P.P);
+        const Ray new_ray1(P.P, O_i);
+
+        Intersection I = bvh.intersect(new_ray1);
+        if (I.isIntersect) {
+            p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
+            if (p >= 0.000001f) {
+                if (I.shape == L.shape) {
+                    NO = fabsf(dot(N, O_i));
+                    f = NO * (P.shape->material->Kd / PI);
+                    C += 0.5f * W * (f / p) * I.shape->material->EvalRadiance();
+                    //C += W * (f / p) * I.shape->material->EvalRadiance();
+                    return C;
+                }
+            }
+        }
+
+        // Extend path
+        float r1 = myrandom(RNGen), r2 = myrandom(RNGen);
+        r1 = sqrtf(r1);
+        r2 *= 2 * PI;
+        O_i = SampleLobe(N, r1, r2);            
+
+        const Ray new_ray2(P.P, O_i);
+
+        Q = bvh.intersect(new_ray2);
+        //Q = TraceRay(new_ray);
+        if (!Q.isIntersect) break;
+
+        NO = fabsf(dot(N, O_i));
+        f = NO * (P.shape->material->EvalRadiance() / PI);
+        p = (NO / PI) * rr;
+        if (p < 0.000001f) break;
+                
+        W *= f / p;
+
+        if (Q.shape->material->isLight()) {                  
+            C += 0.25f * W * Q.shape->material->EvalRadiance();            
+            //C += W * Q.shape->material->EvalRadiance();
+            break;
+        }
+
+        P = Q;                  
     }
 
     return C;
 }
 
-vec3 Scene::SampleLobe(vec3 A, float c, float phi) {
+vec3 SampleLobe(vec3 A, float c, float phi) {
     float s = 0.0f;
-    vec3 K(0.0f), B(0.0f), C(0);
+    vec3 K(0.0f), B(0.0f), C(0.0f);
 
-    s = sqrtf(1 - c * c);
+    s = sqrtf(1.0f - (c * c));
     K = vec3(s * cosf(phi), s * sinf(phi), c);
 
-    if (fabsf(A.z - 1) < 0.001f)
+    if (fabsf(A.z - 1.0f) < 0.001f)
         return K;
-    else if (fabsf(A.z + 1) < 0.001f)
+    else if (fabsf(A.z + 1.0f) < 0.001f)
         return vec3(K.x, -K.y, -K.z);
 
     B = normalize(vec3(-A.y, A.x, 0.0f));
