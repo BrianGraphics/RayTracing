@@ -196,7 +196,7 @@ void Scene::TraceImage(Color* image, const int pass)
                 Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
                 int index = y * width + x;
                 tmp[index] += TracePath(ray, bvh);
-                if (myrandom(RNGen) > rr) image[index] = tmp[index] / static_cast<float>(pass);
+                if (myrandom(RNGen) <= rr) image[index] = tmp[index] / static_cast<float>(pass);
             }
         }
 
@@ -228,7 +228,6 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
  
     Intersection P, Q;
     P = bvh.intersect(ray);
-    //P = TraceRay(ray);
 
     if (!P.isIntersect) return C;
 
@@ -252,7 +251,6 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
                     NO = fabsf(dot(N, O_i));
                     f = NO * (P.shape->material->Kd / PI);
                     C += 0.5f * W * (f / p) * I.shape->material->EvalRadiance();
-                    //C += W * (f / p) * I.shape->material->EvalRadiance();
                     return C;
                 }
             }
@@ -267,7 +265,6 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         const Ray new_ray2(P.P, O_i);
 
         Q = bvh.intersect(new_ray2);
-        //Q = TraceRay(new_ray);
         if (!Q.isIntersect) break;
 
         NO = fabsf(dot(N, O_i));
@@ -278,8 +275,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         W *= f / p;
 
         if (Q.shape->material->isLight()) {                  
-            C += 0.25f * W * Q.shape->material->EvalRadiance();            
-            //C += W * Q.shape->material->EvalRadiance();
+            C += 0.5f * W * Q.shape->material->EvalRadiance();
             break;
         }
 
