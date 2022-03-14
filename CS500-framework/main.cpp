@@ -117,7 +117,7 @@ int main(int argc, char** argv)
             image[y*scene->width + x] = Color(0,0,0);
 
     // RayTrace the image
-    scene->TraceImage(image, 4096);
+    scene->TraceImage(image, 512);
 
     // Write the image
     WriteHdrImage(hdrName, scene->width, scene->height, image);
