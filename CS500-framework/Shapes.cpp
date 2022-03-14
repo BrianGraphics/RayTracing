@@ -164,9 +164,9 @@ bool Box::Intersect(Ray ray, Intersection& record)
 
     if (ret.t0 > ret.t1)
         return false;
-    else if (ret.t0 > e)
+    else if (ret.t0 >= e)
         t = ret.t0;
-    else if (ret.t1 > e)
+    else if (ret.t1 >= e)
         t = ret.t1;
     else
         return false;
@@ -194,26 +194,28 @@ bool Triangle::Intersect(Ray ray, Intersection& record)
     vec3 V0 = triangle[0], V1 = triangle[1], V2 = triangle[2];
     vec3 Q = ray.Q, D = ray.D;
     const vec3 E1 = V1 - V0, E2 = V2 - V0, S = Q - V0;
-    vec3 p = cross(D, E2), q = vec3(0);
+    vec3 p = cross(D, E2), q = vec3(0.0f);
     float d = 0.0f, u = 0.0f, v = 0.0f, t = 0.0f;
 
     d = dot(p, E1);
     if (d == 0.0f) { return false; }
     
     u = dot(p, S) / d;
-    if (u < 0.0f || u > 1.0f) { return false; }
+    //if (u < 0.0f || u > 1.0f) { return false; }
+    if (u < e || u > 1.0f) { return false; }
 
     q = cross(S, E1);
     v = dot(D, q) / d;
     
-    if(v < 0 || u + v > 1) { return false; }
+    //if(v < 0 || u + v > 1) { return false; }
+    if(v < e || u + v > 1.0f) { return false; }
     t = dot(E2, q) / d;
     if(t < e) { return false; }
 
     record.isIntersect = true;
     record.shape = this;
     record.t = t;
-    record.N = (1 - u - v) * normal[0] + u * normal[1] + v * normal[2];
+    record.N = normalize((1 - u - v)* normal[0] + u * normal[1] + v * normal[2]);
     record.P = ray.eval(t);
 
     return true;

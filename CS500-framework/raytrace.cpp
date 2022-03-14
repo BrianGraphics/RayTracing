@@ -180,7 +180,6 @@ void Scene::TraceImage(Color* image, const int pass)
     const vec3 Z = transformVector(camera.orientation, Zaxis());
 
     AccelerationBvh bvh(vectorOfShapes);
-    //Intersection front;
     Color* tmp = new Color[width * height];
     for (int y = 0; y < height; y++)
         for (int x = 0; x < width; x++)
@@ -251,7 +250,6 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
                     NO = fabsf(dot(N, O_i));
                     f = NO * (P.shape->material->Kd / PI);
                     C += 0.5f * W * (f / p) * I.shape->material->EvalRadiance();
-                    return C;
                 }
             }
         }
