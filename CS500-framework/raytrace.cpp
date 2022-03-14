@@ -31,9 +31,6 @@ std::mt19937_64 RNGen(device());
 std::uniform_real_distribution<> myrandom(0.0, 1.0);
 // Call myrandom(RNGen) to get a uniformly distributed random number in [0,1].
 
-// functions
-vec3 SampleLobe(vec3 A, float c, float phi);
-
 Scene::Scene() 
 { 
     //realtime = new Realtime(); 
@@ -195,7 +192,8 @@ void Scene::TraceImage(Color* image, const int pass)
                 dy = 2 * (y + myrandom(RNGen)) / height - 1.0f;
                 Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
                 int index = y * width + x;
-                tmp[index] += TracePath(ray, bvh);
+                vec3 color = TracePath(ray, bvh);
+                if(glm::all(glm::isinf(color))) tmp[index] += TracePath(ray, bvh);
                 if (myrandom(RNGen) <= rr) image[index] = tmp[index] / static_cast<float>(pass);
             }
         }
@@ -221,13 +219,18 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
 {
     Color C = Color(0.0f, 0.0f, 0.0f);
     vec3 W = vec3(1.0f, 1.0f, 1.0f);
-    vec3 N(0.0f), O_i(0.0f), f(0.0f);
+    vec3 N(0.0f), Wi(0.0f), Wo(0.0f), f(0.0f);
+    vec3 m(0.0f);
     float p = 0.0f, NO = 0.0f;
+    float s = 0.0f, p_diffuse = 0.0f, p_reflection = 0.0f;
+    float alpha = 0.0f;
     const float rr = 0.8f;
     Intersection L;
  
     Intersection P, Q;
     P = bvh.intersect(ray);
+    N = P.N;
+    Wo = -ray.D;
 
     if (!P.isIntersect) return C;
 
@@ -236,40 +239,56 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     }
 
 
-    while (myrandom(RNGen) <= rr) {
-        N = P.N;
+    while (myrandom(RNGen) <= rr) {        
         //Explicit light connection
         L = SampleSphere(light, light->center, light->radius);        
-        O_i = normalize(L.P - P.P);
-        const Ray new_ray1(P.P, O_i);
+        Wi = normalize(L.P - P.P);
+        const Ray new_ray1(P.P, Wi);
 
         Intersection I = bvh.intersect(new_ray1);
         if (I.isIntersect) {
             p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
             if (p >= 0.000001f) {
                 if (I.shape == L.shape) {
-                    NO = fabsf(dot(N, O_i));
-                    f = NO * (P.shape->material->Kd / PI);
-                    C += 0.5f * W * (f / p) * I.shape->material->EvalRadiance();
-                    return C;
+                    NO = fabsf(dot(N, Wi));
+                    f = EvalScattering(Wo, N, Wi, *P.shape->material);
+                    C += W * (f / p) * I.shape->material->EvalRadiance();
                 }
             }
         }
 
         // Extend path
         float r1 = myrandom(RNGen), r2 = myrandom(RNGen);
-        r1 = sqrtf(r1);
         r2 *= 2 * PI;
-        O_i = SampleLobe(N, r1, r2);            
 
-        const Ray new_ray2(P.P, O_i);
+        p_diffuse    = length(P.shape->material->Kd);
+        p_reflection = length(P.shape->material->Ks);
+        s = p_diffuse + p_reflection;
+        p_diffuse    /= s;
+        p_reflection /= s;
+
+        // SampleBRDF
+        if (myrandom(RNGen) < p_diffuse) { // choice = diffuse        
+            r1 = sqrtf(r1);            
+            Wi = SampleLobe(N, r1, r2);
+        }
+        else {  // choice = specular
+            alpha = sqrtf(2 / (P.shape->material->alpha + 2));
+            //alpha = P.shape->material->alpha;
+            r1 = cos(atan( alpha * sqrtf(r1) / sqrtf(1 - r1)));
+            m = SampleLobe(N, r1, r2);
+            Wi = 2 * fabsf(dot(Wo, m)) * m - Wo;
+        }
+               
+
+        const Ray new_ray2(P.P, Wi);
 
         Q = bvh.intersect(new_ray2);
         if (!Q.isIntersect) break;
 
-        NO = fabsf(dot(N, O_i));
-        f = NO * (P.shape->material->EvalRadiance() / PI);
-        p = (NO / PI) * rr;
+        NO = fabsf(dot(N, Wi));
+        f = EvalScattering(Wo, N, Wi, *P.shape->material);
+        p = PdfBrdf(Wo, N, Wi, alpha, p_diffuse, p_reflection) * rr;
         if (p < 0.000001f) break;
                 
         W *= f / p;
@@ -279,7 +298,9 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
             break;
         }
 
-        P = Q;                  
+        P = Q;    
+        N = P.N;
+        Wo = -Wi;
     }
 
     return C;
@@ -303,7 +324,7 @@ vec3 SampleLobe(vec3 A, float c, float phi) {
     return K.x * B + K.y * C + K.z * A;
 }
 
-Intersection Scene::SampleSphere(Shape* object, vec3 center, float radius)
+Intersection SampleSphere(Shape* object, vec3 center, float radius)
 {
     float r1 = myrandom(RNGen), r2 = myrandom(RNGen);
     float z = 2 * r1 - 1;
@@ -317,9 +338,60 @@ Intersection Scene::SampleSphere(Shape* object, vec3 center, float radius)
     return ret;
 }
 
-float Scene::GeometryFactor(const Intersection& A, const Intersection& B)
+float GeometryFactor(const Intersection& A, const Intersection& B)
 {
     vec3 D = A.P - B.P;
     float DD = dot(D, D);
     return fabsf(dot(A.N, D) * dot(B.N, D) / (DD * DD));
+}
+
+float PdfBrdf(vec3 out, vec3 N, vec3 in, float alpha, float pd, float pr) {
+    vec3 m(0.0f);
+    float Pd = 0.0f, Pr = 0.0f, D_term = 0.0f, r1 = myrandom(RNGen);
+    float NdotM = 0.0f, alpha_square = alpha * alpha;    
+
+    m = normalize(out + in);
+    NdotM = dot(N, m);
+    D_term = alpha_square / PI / (NdotM * NdotM * (alpha_square - 1) + 1) / (NdotM * NdotM * (alpha_square - 1) + 1);
+
+    Pd = fabsf(dot(in, N)) / PI;
+    Pr = D_term * fabsf(dot(m, N)) / (4 * fabsf(dot(in, m)));
+
+    return pd * Pd + pr * Pr;
+}
+
+vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat) {
+    vec3 Ed(0.0f), Er(0.0f), m(0.0f);
+    vec3 Ks = mat.Ks;
+    vec3 F_term(0.0f);
+    float NdotM = 0.0f, NdotI = 0.0f, NdotO = 0.0f, IdotM = 0.0f;
+    float alpha_square = mat.alpha * mat.alpha;
+    float tanI = 0.0f, tanO = 0.0f;
+    float D_term = 0.0f, G_term = 0.0f;
+    float G1 = 0.0f, G2 = 0.0f;
+
+    m = normalize(out + in);
+    NdotI = dot(N, in);
+    NdotO = dot(N, out);
+    NdotM = dot(N, m);
+    tanI = sqrtf(1.0f - NdotI * NdotI) / NdotI;
+    tanO = sqrtf(1.0f - NdotO * NdotO) / NdotO;
+
+    D_term = alpha_square / PI / (NdotM * NdotM * (alpha_square - 1) + 1) / (NdotM * NdotM * (alpha_square - 1) + 1);
+
+    G1 = 2 / (1 + sqrtf(1 + alpha_square * tanI * tanI));
+    G2 = 2 / (1 + sqrtf(1 + alpha_square * tanO * tanO));
+    G_term = G1 * G2;
+
+    IdotM = dot(in, m);
+    F_term = Ks + (1.0f - Ks) * (1 - IdotM) * (1 - IdotM) * (1 - IdotM) * (1 - IdotM) * (1 - IdotM);
+
+
+    Ed = mat.Kd / PI;
+
+    NdotI = fabsf(NdotI);
+    NdotO = fabsf(NdotO);
+    Er = D_term * G_term * F_term / (4 * NdotI * NdotO);
+
+    return NdotI * (Ed + Er);
 }

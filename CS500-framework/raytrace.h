@@ -119,7 +119,17 @@ public:
 
     Color TracePath(Ray& ray, AccelerationBvh& bvh);
     
-    Intersection SampleSphere(Shape* object, vec3 center, float radius);
+   
 
-    float GeometryFactor(const Intersection& A, const Intersection& B);
+    
 };
+
+vec3 SampleLobe(vec3 A, float c, float phi);
+
+float GeometryFactor(const Intersection& A, const Intersection& B);
+
+Intersection SampleSphere(Shape* object, vec3 center, float radius);
+
+float PdfBrdf(vec3 out, vec3 N, vec3 in, float alpha, float pd, float ps);
+
+vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat);
