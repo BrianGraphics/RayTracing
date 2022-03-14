@@ -262,7 +262,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
 
         // Extend path
         float r1 = myrandom(RNGen), r2 = myrandom(RNGen);
-        r2 *= 2 * PI;
+        r2 *= 2.0f * PI;
 
         // probability
         p_diffuse    = length(P.shape->material->Kd);
@@ -274,8 +274,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         
 
         // roughness
-        alpha = sqrtf(2 / (P.shape->material->alpha + 2));
-        //alpha = P.shape->material->alpha;
+        alpha = sqrtf(2.0f / (P.shape->material->alpha + 2.0f));
 
         // SampleBRDF, choose random direction
         if (myrandom(RNGen) < p_diffuse) { // choice = diffuse        
@@ -286,6 +285,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
             r1 = cos(atan( alpha * sqrtf(r1) / sqrtf(1 - r1)));
             m = SampleLobe(N, r1, r2);
             Wi = 2 * fabsf(dot(Wo, m)) * m - Wo;
+            Wi = normalize(Wi);
         }
                
         const Ray new_ray2(P.P, Wi);
@@ -333,9 +333,9 @@ vec3 SampleLobe(vec3 A, float c, float phi) {
 Intersection SampleSphere(Shape* object, vec3 center, float radius)
 {
     float r1 = myrandom(RNGen), r2 = myrandom(RNGen);
-    float z = 2 * r1 - 1;
+    float z = 2.0f * r1 - 1.0f;
     float r = sqrtf(1 - z * z);
-    float a = 2 * PI * r2;
+    float a = 2.0f * PI * r2;
     Intersection ret;
     ret.N = normalize(vec3(r * cosf(a), r * sinf(a), z));
     ret.P = center + radius * ret.N;
@@ -364,7 +364,7 @@ float PdfBrdf(vec3 out, vec3 N, vec3 in, float alpha, float pd, float pr) {
     }
 
     Pd = fabsf(dot(in, N)) / PI;
-    Pr = D_term * fabsf(dot(m, N)) / (4 * fabsf(dot(in, m)));
+    Pr = D_term * fabsf(dot(m, N)) / (4.0f * fabsf(dot(in, m)));
 
     return pd * Pd + pr * Pr;
 }
@@ -375,7 +375,7 @@ vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat) {
     vec3 F_term(0.0f);
     float NdotM = 0.0f, NdotI = 0.0f, NdotO = 0.0f;
     float IdotM = 0.0f, OdotM = 0.0f;
-    float alpha = sqrtf(2 / (mat.alpha + 2));
+    float alpha = sqrtf(2.0f / (mat.alpha + 2.0f));
     float alpha_square = alpha * alpha;
     float tanI = 0.0f, tanO = 0.0f, tanM;
     float D_term = 0.0f, G_term = 0.0f;
@@ -401,14 +401,14 @@ vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat) {
     if ((IdotM / NdotI) > 0.0f) {     
         // tan may be zero
         if (tanI > 0.0f)
-            G1 = 2 / (1 + sqrtf(1 + alpha_square * tanI * tanI));
+            G1 = 2.0f / (1 + sqrtf(1 + alpha_square * tanI * tanI));
         else
             G1 = 1.0f;
 
         // tan may be zero
         if ((OdotM / NdotO) > 0.0f) {
             if (tanO > 0.0f)
-                G2 = 2 / (1 + sqrtf(1 + alpha_square * tanO * tanO));
+                G2 = 2.0f / (1 + sqrtf(1 + alpha_square * tanO * tanO));
             else
                 G2 = 1.0f;
         }
@@ -423,14 +423,14 @@ vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat) {
     G_term = G1 * G2;
 
     IdotM = fabsf(IdotM);
-    F_term = Ks + (1.0f - Ks) * (1 - IdotM) * (1 - IdotM) * (1 - IdotM) * (1 - IdotM) * (1 - IdotM);
+    F_term = Ks + (1.0f - Ks) * (1 - IdotM) * (1.0f - IdotM) * (1.0f - IdotM) * (1.0f - IdotM) * (1.0f - IdotM);
 
 
     Ed = mat.Kd / PI;
 
     NdotI = fabsf(NdotI);
     NdotO = fabsf(NdotO);
-    Er = D_term * G_term * F_term / (4 * NdotI * NdotO);
+    Er = D_term * G_term * F_term / (4.0f * NdotI * NdotO);
 
     return NdotI * (Ed + Er);
 }
