@@ -245,20 +245,20 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     // extend ray
     while (myrandom(RNGen) <= rr) {        
         //Explicit light connection
-        L = SampleSphere(light, light->center, light->radius);        
-        Wi = normalize(L.P - P.P);
-        const Ray new_ray1(P.P, Wi);
+        //L = SampleSphere(light, light->center, light->radius);        
+        //Wi = normalize(L.P - P.P);
+        //const Ray new_ray1(P.P, Wi);
 
-        Intersection I = bvh.intersect(new_ray1);
-        if (I.isIntersect) {
-            p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
-            if (p >= 0.000001f) {
-                if (I.shape == L.shape) {
-                    f = EvalScattering(Wo, N, Wi, *P.shape->material);
-                    C += W * (f / p) * I.shape->material->EvalRadiance();
-                }
-            }
-        }
+        //Intersection I = bvh.intersect(new_ray1);
+        //if (I.isIntersect) {
+        //    p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
+        //    if (p >= 0.000001f) {
+        //        if (I.shape == L.shape) {
+        //            f = EvalScattering(Wo, N, Wi, *P.shape->material);
+        //            C += W * (f / p) * I.shape->material->EvalRadiance();
+        //        }
+        //    }
+        //}
 
         // Extend path
         float r1 = myrandom(RNGen), r2 = myrandom(RNGen);
@@ -282,7 +282,8 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
             Wi = SampleLobe(N, r1, r2);
         }
         else {  // choice = specular
-            r1 = cos(atan( alpha * sqrtf(r1) / sqrtf(1 - r1)));
+            r1 = cos(atan(alpha * sqrtf(r1) / sqrtf(1 - r1)));
+            //r1 = cos(atan( sqrtf(-alpha * alpha * log(1 - r1))));
             m = SampleLobe(N, r1, r2);
             Wi = 2 * fabsf(dot(Wo, m)) * m - Wo;
             Wi = normalize(Wi);
@@ -377,7 +378,7 @@ vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat) {
     float IdotM = 0.0f, OdotM = 0.0f;
     float alpha = sqrtf(2.0f / (mat.alpha + 2.0f));
     float alpha_square = alpha * alpha;
-    float tanI = 0.0f, tanO = 0.0f, tanM;
+    float tanI = 0.0f, tanO = 0.0f, tanM = 0.0f;
     float D_term = 0.0f, G_term = 0.0f;
     float G1 = 0.0f, G2 = 0.0f;
 
@@ -398,27 +399,27 @@ vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat) {
         D_term = alpha_square / PI / (NdotM * NdotM * NdotM * NdotM) / (alpha_square + tanM * tanM) / (alpha_square + tanM * tanM);
 
     // Characteristic factor
-    if ((IdotM / NdotI) > 0.0f) {     
+    if (NdotI > 1.0f) {
+        G1 = 1.0f;
+    }
+    else if ((IdotM / NdotI) > 0.0f) {
         // tan may be zero
-        if (tanI > 0.0f)
-            G1 = 2.0f / (1 + sqrtf(1 + alpha_square * tanI * tanI));
-        else
+        if (tanI == 0.0f)
             G1 = 1.0f;
-
-        // tan may be zero
-        if ((OdotM / NdotO) > 0.0f) {
-            if (tanO > 0.0f)
-                G2 = 2.0f / (1 + sqrtf(1 + alpha_square * tanO * tanO));
-            else
-                G2 = 1.0f;
-        }
+        else
+            G1 = 2.0f / (1 + sqrtf(1 + alpha_square * tanI * tanI));            
     }
 
-    // G1 & G2 should less than 1.0f
-    if (G1 > 1.0f)
-        G1 = 1.0f;
-    if (G2 > 1.0f)
+    if (NdotO > 1.0f) {
         G2 = 1.0f;
+    }
+    else if ((OdotM / NdotO) > 0.0f) {
+        if (tanO == 0.0f)
+            G2 = 1.0f;
+        else
+            G2 = 2.0f / (1 + sqrtf(1 + alpha_square * tanO * tanO));
+            
+    }
 
     G_term = G1 * G2;
 
