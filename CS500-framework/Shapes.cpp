@@ -201,19 +201,21 @@ bool Triangle::Intersect(Ray ray, Intersection& record)
     if (d == 0.0f) { return false; }
     
     u = dot(p, S) / d;
-    if (u < 0.0f || u > 1.0f) { return false; }
+    //if (u < 0.0f || u > 1.0f) { return false; }
+    if (u < e || u > 1.0f) { return false; }
 
     q = cross(S, E1);
     v = dot(D, q) / d;
     
-    if(v < 0 || u + v > 1) { return false; }
+    //if(v < 0 || u + v > 1) { return false; }
+    if(v < e || u + v > 1) { return false; }
     t = dot(E2, q) / d;
     if(t < e) { return false; }
 
     record.isIntersect = true;
     record.shape = this;
     record.t = t;
-    record.N = (1 - u - v) * normal[0] + u * normal[1] + v * normal[2];
+    record.N = normalize((1 - u - v) * normal[0] + u * normal[1] + v * normal[2]);
     record.P = ray.eval(t);
 
     return true;

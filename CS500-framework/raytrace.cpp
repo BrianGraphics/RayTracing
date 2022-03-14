@@ -177,7 +177,6 @@ void Scene::TraceImage(Color* image, const int pass)
     const vec3 Z = transformVector(camera.orientation, Zaxis());
 
     AccelerationBvh bvh(vectorOfShapes);
-    //Intersection front;
     Color* tmp = new Color[width * height];
     for (int y = 0; y < height; y++)
         for (int x = 0; x < width; x++)
@@ -193,7 +192,7 @@ void Scene::TraceImage(Color* image, const int pass)
                 Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
                 int index = y * width + x;
                 vec3 color = TracePath(ray, bvh);
-                if(!glm::all(glm::isinf(color))) tmp[index] += TracePath(ray, bvh);
+                if (!glm::all(glm::isinf(color))) tmp[index] += color;
                 if (myrandom(RNGen) <= rr) image[index] = tmp[index] / static_cast<float>(pass);
             }
         }
@@ -245,20 +244,20 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     // extend ray
     while (myrandom(RNGen) <= rr) {        
         //Explicit light connection
-        //L = SampleSphere(light, light->center, light->radius);        
-        //Wi = normalize(L.P - P.P);
-        //const Ray new_ray1(P.P, Wi);
+        L = SampleSphere(light, light->center, light->radius);        
+        Wi = normalize(L.P - P.P);
+        const Ray new_ray1(P.P, Wi);
 
-        //Intersection I = bvh.intersect(new_ray1);
-        //if (I.isIntersect) {
-        //    p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
-        //    if (p >= 0.000001f) {
-        //        if (I.shape == L.shape) {
-        //            f = EvalScattering(Wo, N, Wi, *P.shape->material);
-        //            C += W * (f / p) * I.shape->material->EvalRadiance();
-        //        }
-        //    }
-        //}
+        Intersection I = bvh.intersect(new_ray1);
+        if (I.isIntersect) {
+            p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
+            if (p >= 0.000001f) {
+                if (I.shape == L.shape) {
+                    f = EvalScattering(Wo, N, Wi, *P.shape->material);
+                    C += W * (f / p) * I.shape->material->EvalRadiance();
+                }
+            }
+        }
 
         // Extend path
         float r1 = myrandom(RNGen), r2 = myrandom(RNGen);
@@ -301,7 +300,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         W *= f / p;
 
         if (Q.shape->material->isLight()) {                  
-            C += W * Q.shape->material->EvalRadiance();
+            C += W * Q.shape->material->EvalRadiance();            
             break;
         }
 
@@ -310,6 +309,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         Wo = -Wi;
     }
 
+    //if (!glm::all(glm::isinf(C))) C = vec3(0.0f);
     return C;
 }
 
@@ -359,7 +359,7 @@ float PdfBrdf(vec3 out, vec3 N, vec3 in, float alpha, float pd, float pr) {
 
     m = normalize(out + in);
     NdotM = dot(N, m);
-    if (NdotM > 0.0f) {
+    if (NdotM > 0.000001f) {
         const float tanM = sqrtf(1.0f - NdotM * NdotM) / NdotM;
         D_term = alpha_square / PI / (NdotM * NdotM * NdotM * NdotM) / (alpha_square + tanM * tanM) / (alpha_square + tanM * tanM);
     }
@@ -395,7 +395,7 @@ vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat) {
     
 
     // Characteristic factor
-    if(NdotM > 0.0f)
+    if(NdotM > 0.000001f)
         D_term = alpha_square / PI / (NdotM * NdotM * NdotM * NdotM) / (alpha_square + tanM * tanM) / (alpha_square + tanM * tanM);
 
     // Characteristic factor
@@ -404,7 +404,7 @@ vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat) {
     }
     else if ((IdotM / NdotI) > 0.0f) {
         // tan may be zero
-        if (tanI == 0.0f)
+        if (tanI < 0.000001f)
             G1 = 1.0f;
         else
             G1 = 2.0f / (1 + sqrtf(1 + alpha_square * tanI * tanI));            
@@ -414,7 +414,7 @@ vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat) {
         G2 = 1.0f;
     }
     else if ((OdotM / NdotO) > 0.0f) {
-        if (tanO == 0.0f)
+        if (tanO < 0.000001f)
             G2 = 1.0f;
         else
             G2 = 2.0f / (1 + sqrtf(1 + alpha_square * tanO * tanO));
@@ -430,7 +430,10 @@ vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat) {
     Ed = mat.Kd / PI;
 
     NdotI = fabsf(NdotI);
+    if (NdotI > 1.0f) NdotI = 1.0f;
     NdotO = fabsf(NdotO);
+    if (NdotO > 1.0f) NdotO = 1.0f;
+
     Er = D_term * G_term * F_term / (4.0f * NdotI * NdotO);
 
     return NdotI * (Ed + Er);
