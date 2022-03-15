@@ -178,7 +178,9 @@ void Scene::TraceImage(Color* image, const int pass)
     const vec3 X = rx * transformVector(camera.orientation, Xaxis());
     const vec3 Y = camera.ry * transformVector(camera.orientation, Yaxis());
     const vec3 Z = transformVector(camera.orientation, Zaxis());
-
+    std::time_t t = std::time(0);   // get time now
+    std::tm* now = std::localtime(&t);
+    fprintf(stderr, "Start: %i:%i:%i\n", now->tm_hour, now->tm_min, now->tm_sec);
     AccelerationBvh bvh(vectorOfShapes);
     Color* tmp = new Color[width * height];
     for (int y = 0; y < height; y++)
@@ -201,6 +203,10 @@ void Scene::TraceImage(Color* image, const int pass)
 
         fprintf(stderr, "\n");
     }
+
+    t = std::time(0);
+    now = std::localtime(&t);
+    fprintf(stderr, "End:   %i:%i:%i\n", now->tm_hour, now->tm_min, now->tm_sec);
 }
 
 Intersection Scene::TraceRay(Ray ray) {
