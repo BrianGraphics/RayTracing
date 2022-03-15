@@ -180,7 +180,9 @@ void Scene::TraceImage(Color* image, const int pass)
     vec3 L(0);
     Intersection front;
     AccelerationBvh bvh(vectorOfShapes);
-
+    std::time_t t = std::time(0);   // get time now
+    std::tm* now = std::localtime(&t);
+    fprintf(stderr, "Start: %i:%i:%i\n", now->tm_hour, now->tm_min, now->tm_sec);
 #pragma omp parallel for schedule(dynamic, 1) // Magic: Multi-thread y loop
     for (int y = 0; y < height; y++) {
         fprintf(stderr, "Rendering %4d\r", y);
@@ -189,23 +191,26 @@ void Scene::TraceImage(Color* image, const int pass)
             float dy = 2 * (y + 0.5f) / height - 1;
             const Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
             front = bvh.intersect(ray);
+            //front = TraceRay(ray);
             Color color(0);
             if (front.isIntersect) {                
-                //L = normalize(lightPos - front.P);
+                //L = normalize(-lightPos + front.P);
                 //color =  glm::max(dot(front.N, L), 0.0f) * front.shape->material->Kd / PI;
                 
-                color = front.shape->material->Kd;
+                //color = front.shape->material->Kd;
                 //color = glm::abs(front.N);
-                //color = vec3((front.t -5.0f) / 4.0f);             
+                color = vec3((front.t -5.0f) / 4.0f);             
             }
 
             image[y * width + x] = color;    
             color = vec3(0.0f);
             front.isIntersect = false;
         }
-    }
-    
+    }    
     fprintf(stderr, "\n");
+    t = std::time(0);
+    now = std::localtime(&t);
+    fprintf(stderr, "End:   %i:%i:%i\n", now->tm_hour, now->tm_min, now->tm_sec);
 }
 
 Intersection Scene::TraceRay(const Ray& ray) {

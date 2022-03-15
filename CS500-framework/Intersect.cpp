@@ -57,7 +57,7 @@ void Interval::Intersect(Ray ray, Slab slab)
 
 		if (t0 > t1) {
 			std::swap(t0, t1);
-			std::swap(N0, N1);
+			//std::swap(N0, N1);
 		}
 	}
 	else {
