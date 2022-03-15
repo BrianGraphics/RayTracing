@@ -56,7 +56,10 @@ Interval Interval::Intersect(Ray ray, Slab slab)
 		ret.t0 = (-d0 - NdotQ) / NdotD;
 		ret.t1 = (-d1 - NdotQ) / NdotD;
 
-		if (ret.t0 > ret.t1) { std::swap(ret.t0, ret.t1); std::swap(ret.N0, ret.N1); }
+		if (ret.t0 > ret.t1) { 
+			std::swap(ret.t0, ret.t1); 
+			std::swap(ret.N0, ret.N1); 
+		}
 	}
 	else {
 		NdotQ = glm::dot(N, Q);

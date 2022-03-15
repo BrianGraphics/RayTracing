@@ -191,8 +191,8 @@ void Scene::TraceImage(Color* image, const int pass)
                 dy = 2 * (y + myrandom(RNGen)) / height - 1.0f;
                 Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
                 int index = y * width + x;
-                vec3 color = TracePath(ray, bvh);
-                if (!glm::all(glm::isinf(color))) tmp[index] += color;
+                //vec3 color = TracePath(ray, bvh);
+                tmp[index] += TracePath(ray, bvh);
                 if (myrandom(RNGen) <= rr) image[index] = tmp[index] / static_cast<float>(pass);
             }
         }
@@ -239,7 +239,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
 
     // init
     N = P.N;
-    Wo = -ray.D;
+    Wo = normalize(-ray.D);
 
     // extend ray
     while (myrandom(RNGen) <= rr) {        
@@ -274,20 +274,20 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
 
         // roughness
         alpha = sqrtf(2.0f / (P.shape->material->alpha + 2.0f));
+        //alpha = P.shape->material->alpha;
 
         // SampleBRDF, choose random direction
         if (myrandom(RNGen) < p_diffuse) { // choice = diffuse        
             r1 = sqrtf(r1);            
-            Wi = SampleLobe(N, r1, r2);
+            Wi = SampleLobe(N, r1, r2);           
         }
         else {  // choice = specular
             r1 = cos(atan(alpha * sqrtf(r1) / sqrtf(1 - r1)));
-            //r1 = cos(atan( sqrtf(-alpha * alpha * log(1 - r1))));
             m = SampleLobe(N, r1, r2);
-            Wi = 2 * fabsf(dot(Wo, m)) * m - Wo;
-            Wi = normalize(Wi);
+            Wi = 2 * fabsf(dot(Wo, m)) * m - Wo;            
         }
                
+        Wi = normalize(Wi);
         const Ray new_ray2(P.P, Wi);
 
         Q = bvh.intersect(new_ray2);
@@ -309,7 +309,8 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         Wo = -Wi;
     }
 
-    //if (!glm::all(glm::isinf(C))) C = vec3(0.0f);
+    //if (glm::any(glm::isinf(C))) C = vec3(0.0f);
+    if (glm::any(glm::isnan(C))) C = vec3(0.0f);
     return C;
 }
 
