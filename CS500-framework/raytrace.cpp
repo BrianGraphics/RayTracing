@@ -110,7 +110,7 @@ void Scene::Command(const std::vector<std::string>& strings,
         // First rgb is Diffuse reflection, second is specular reflection.
         // third is beer's law transmission followed by index of refraction.
         // Creates a Material instance to be picked up by successive shapes
-        currentMat = new Material(vec3(f[1], f[2], f[3]), vec3(f[4], f[5], f[6]), f[7]); }
+        currentMat = new Material(vec3(f[1], f[2], f[3]), vec3(f[4], f[5], f[6]), f[7], vec3(f[8], f[9], f[10]), f[11]); }
 
     else if (c == "light") {
         // syntax: light  r g b   
@@ -221,8 +221,9 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     vec3 N(0.0f), Wi(0.0f), Wo(0.0f), f(0.0f);
     vec3 m(0.0f);
     float p = 0.0f;
-    float s = 0.0f, p_diffuse = 0.0f, p_reflection = 0.0f;
+    float s = 0.0f, p_diffuse = 0.0f, p_reflection = 0.0f, p_transmission = 0.0f;
     float alpha = 0.0f;
+    float ni = 0.0f, no = 0.0f, n = 0.0f;
     const float rr = 0.8f;    
     Intersection P, Q, L;
 
@@ -242,7 +243,27 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     Wo = normalize(-ray.D);
 
     // extend ray
-    while (myrandom(RNGen) <= rr) {        
+    while (myrandom(RNGen) <= rr) {     
+
+        // probability
+        p_diffuse = length(P.shape->material->Kd);
+        p_reflection = length(P.shape->material->Ks);
+        p_transmission = length(P.shape->material->Kt);
+        s = p_diffuse + p_reflection + p_transmission;
+        p_diffuse /= s;
+        p_reflection /= s;
+        p_transmission /= s;
+
+        if (dot(Wo, N) > 0.0f) {
+            ni = 1.0f;
+            no = P.shape->material->IOR;
+        }
+        else {
+            ni = P.shape->material->IOR;
+            no = 1.0f;
+        }
+        n = ni / no;
+
         //Explicit light connection
         L = SampleSphere(light, light->center, light->radius);        
         Wi = normalize(L.P - P.P);
@@ -253,7 +274,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
             p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
             if (p >= 0.000001f) {
                 if (I.shape == L.shape) {
-                    f = EvalScattering(Wo, N, Wi, *P.shape->material);
+                    f = EvalScattering(Wo, N, Wi, *P.shape->material, p_diffuse, p_reflection, p_transmission, ni, no);
                     C += W * (f / p) * I.shape->material->EvalRadiance();
                 }
             }
@@ -261,30 +282,36 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
 
         // Extend path
         float r1 = myrandom(RNGen), r2 = myrandom(RNGen);
-        r2 *= 2.0f * PI;
-
-        // probability
-        p_diffuse    = length(P.shape->material->Kd);
-        p_reflection = length(P.shape->material->Ks);
-        s = p_diffuse + p_reflection;
-        p_diffuse    /= s;
-        p_reflection /= s;
-
-        
+        r2 *= 2.0f * PI;       
 
         // roughness
         alpha = sqrtf(2.0f / (P.shape->material->alpha + 2.0f));
         //alpha = P.shape->material->alpha;
 
         // SampleBRDF, choose random direction
-        if (myrandom(RNGen) < p_diffuse) { // choice = diffuse        
+        float random = myrandom(RNGen);
+        if (random < p_diffuse) {                     // choice = diffuse        
             r1 = sqrtf(r1);            
             Wi = SampleLobe(N, r1, r2);           
         }
-        else {  // choice = specular
+        else if(random < p_diffuse + p_reflection) {  // choice = specular
             r1 = cos(atan(alpha * sqrtf(r1) / sqrtf(1 - r1)));
             m = SampleLobe(N, r1, r2);
             Wi = 2 * fabsf(dot(Wo, m)) * m - Wo;            
+        }
+        else {                                        // choice = transmission
+            r1 = cos(atan(alpha * sqrtf(r1) / sqrtf(1 - r1)));
+            m = SampleLobe(N, r1, r2);
+            const float WdotM = dot(Wo, m);
+            const float radicand = 1 - n * n * (1 - WdotM * WdotM);
+            if (radicand < 0.0f) {
+                Wi = 2 * fabsf(dot(Wo, m)) * m - Wo;
+            }
+            else {                
+                const float sign = dot(Wo, N) >= 0 ? 1.0f : -1.0f;
+                Wi = (n * WdotM - sign * sqrtf(radicand)) * m - n * Wo;
+            }
+                
         }
                
         Wi = normalize(Wi);
@@ -293,8 +320,8 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         Q = bvh.intersect(new_ray2);
         if (!Q.isIntersect) break;
 
-        f = EvalScattering(Wo, N, Wi, *P.shape->material);
-        p = PdfBrdf(Wo, N, Wi, alpha, p_diffuse, p_reflection) * rr;
+        f = EvalScattering(Wo, N, Wi, *P.shape->material, p_diffuse, p_reflection, p_transmission, ni, no);
+        p = PdfBrdf(Wo, N, Wi, alpha, p_diffuse, p_reflection, p_transmission, ni, no) * rr;
         if (p < 0.000001f) break;
                 
         W *= f / p;
@@ -353,26 +380,52 @@ float GeometryFactor(const Intersection& A, const Intersection& B)
     return fabsf(dot(A.N, D) * dot(B.N, D) / (DD * DD));
 }
 
-float PdfBrdf(vec3 out, vec3 N, vec3 in, float alpha, float pd, float pr) {
+float PdfBrdf(vec3 out, vec3 N, vec3 in, float alpha, float pd, float pr, float pt, float ni, float no) {
     vec3 m(0.0f);
-    float Pd = 0.0f, Pr = 0.0f, D_term = 0.0f, r1 = myrandom(RNGen);
+    float Pd = 0.0f, Pr = 0.0f, Pt = 0.0f, D_term = 0.0f, r1 = myrandom(RNGen);
     float NdotM = 0.0f, alpha_square = alpha * alpha;    
 
-    m = normalize(out + in);
-    NdotM = dot(N, m);
-    if (NdotM > 0.000001f) {
-        const float tanM = sqrtf(1.0f - NdotM * NdotM) / NdotM;
-        D_term = alpha_square / PI / (NdotM * NdotM * NdotM * NdotM) / (alpha_square + tanM * tanM) / (alpha_square + tanM * tanM);
+    if (pd > 0.0f) Pd = fabsf(dot(in, N)) / PI;
+
+    if (pr > 0.0f) {
+        m = normalize(out + in);
+        NdotM = dot(N, m);
+        if (NdotM > 0.0f) {
+            const float tanM = sqrtf(1.0f - NdotM * NdotM) / NdotM;
+            D_term = alpha_square / PI / (NdotM * NdotM * NdotM * NdotM) / (alpha_square + tanM * tanM) / (alpha_square + tanM * tanM);
+        }
+
+        Pr = D_term * fabsf(dot(m, N)) / (4.0f * fabsf(dot(in, m)));
     }
 
-    Pd = fabsf(dot(in, N)) / PI;
-    Pr = D_term * fabsf(dot(m, N)) / (4.0f * fabsf(dot(in, m)));
+    if (pt > 0.0f) {
+        m = -normalize(no * in + ni * out);
+        float n = ni / no;
+        float radicand = 1 - n * n * (1 - dot(out, m) * dot(out, m));
+        if (radicand < 0.0f) m = normalize(in + out);
+        NdotM = dot(N, m);
 
-    return pd * Pd + pr * Pr;
+        if (NdotM > 0.0f) {
+            const float tanM = sqrtf(1.0f - NdotM * NdotM) / NdotM;
+            D_term = alpha_square / PI / (NdotM * NdotM * NdotM * NdotM) / (alpha_square + tanM * tanM) / (alpha_square + tanM * tanM);
+            
+            if (radicand < 0.0f) {
+                Pt = D_term * fabsf(dot(m, N)) / (4.0f * fabsf(dot(in, m)));
+            }
+            else {
+                Pt = D_term * fabsf(dot(m, N)) * no * no * fabsf(dot(in, m)) 
+                     / (no * dot(in, m) + ni * dot(out, m)) / (no * dot(in, m) + ni * dot(out, m));
+            }
+        }
+    }
+    
+    
+
+    return pd * Pd + pr * Pr + pt * Pt;
 }
 
-vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat) {
-    vec3 Ed(0.0f), Er(0.0f), m(0.0f);
+vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat, const float pd, const float ps, const float pt, float ni, float no) {
+    vec3 Ed(0.0f), Er(0.0f), Et(0.0f), m(0.0f);
     vec3 Ks = mat.Ks;
     vec3 F_term(0.0f);
     float NdotM = 0.0f, NdotI = 0.0f, NdotO = 0.0f;
@@ -382,60 +435,85 @@ vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat) {
     float tanI = 0.0f, tanO = 0.0f, tanM = 0.0f;
     float D_term = 0.0f, G_term = 0.0f;
     float G1 = 0.0f, G2 = 0.0f;
+    float radicand = 0.0f;
 
-    m = normalize(out + in);
+    // diffuse
+    if(pd > 0.0f) Ed = mat.Kd / PI;
 
-    NdotI = dot(N,  in);
-    NdotO = dot(N, out);
-    NdotM = dot(N,   m);
-    IdotM = dot(in,  m);
-    OdotM = dot(out, m);
-    tanI = sqrtf(1.0f - NdotI * NdotI) / NdotI;
-    tanO = sqrtf(1.0f - NdotO * NdotO) / NdotO;
-    tanM = sqrtf(1.0f - NdotM * NdotM) / NdotM;
-    
+    for (int i = 0; i < 2; ++i) {
+        // specular
+        if (i == 0) {
+            if (ps <= 0.0f) continue;
+            m = normalize(out + in);            
+        }
+        else { // transmission
+            if (pt <= 0.0f) break;
+            m = -normalize(ni * out + no * in);
+            radicand = 1 - (ni / no) * (ni / no) * (1 - dot(out, m) * dot(out, m));
+            if (radicand < 0.0f) m = normalize(out + in);
+        }
 
-    // Characteristic factor
-    if(NdotM > 0.000001f)
-        D_term = alpha_square / PI / (NdotM * NdotM * NdotM * NdotM) / (alpha_square + tanM * tanM) / (alpha_square + tanM * tanM);
+        NdotI = dot(N, in);
+        NdotO = dot(N, out);
+        NdotM = dot(N, m);
+        IdotM = dot(in, m);
+        OdotM = dot(out, m);
+        tanI = sqrtf(1.0f - NdotI * NdotI) / NdotI;
+        tanO = sqrtf(1.0f - NdotO * NdotO) / NdotO;
+        tanM = sqrtf(1.0f - NdotM * NdotM) / NdotM;
 
-    // Characteristic factor
-    if (NdotI > 1.0f) {
-        G1 = 1.0f;
-    }
-    else if ((IdotM / NdotI) > 0.0f) {
-        // tan may be zero
-        if (tanI < 0.000001f)
+
+        // Characteristic factor
+        if (NdotM > 0.000001f)
+            D_term = alpha_square / PI / (NdotM * NdotM * NdotM * NdotM) / (alpha_square + tanM * tanM) / (alpha_square + tanM * tanM);
+
+        // Characteristic factor
+        if (NdotI > 1.0f) {
             G1 = 1.0f;
-        else
-            G1 = 2.0f / (1 + sqrtf(1 + alpha_square * tanI * tanI));            
-    }
+        }
+        else if ((IdotM / NdotI) > 0.0f) {
+            // tan may be zero
+            if (tanI < 0.000001f)
+                G1 = 1.0f;
+            else
+                G1 = 2.0f / (1 + sqrtf(1 + alpha_square * tanI * tanI));
+        }
 
-    if (NdotO > 1.0f) {
-        G2 = 1.0f;
-    }
-    else if ((OdotM / NdotO) > 0.0f) {
-        if (tanO < 0.000001f)
+        if (NdotO > 1.0f) {
             G2 = 1.0f;
-        else
-            G2 = 2.0f / (1 + sqrtf(1 + alpha_square * tanO * tanO));
-            
+        }
+        else if ((OdotM / NdotO) > 0.0f) {
+            if (tanO < 0.000001f)
+                G2 = 1.0f;
+            else
+                G2 = 2.0f / (1 + sqrtf(1 + alpha_square * tanO * tanO));
+
+        }
+
+        G_term = G1 * G2;
+
+        IdotM = fabsf(IdotM);
+        F_term = Ks + (1.0f - Ks) * (1 - IdotM) * (1.0f - IdotM) * (1.0f - IdotM) * (1.0f - IdotM) * (1.0f - IdotM);
+
+        NdotI = fabsf(NdotI);
+        if (NdotI > 1.0f) NdotI = 1.0f;
+        NdotO = fabsf(NdotO);
+        if (NdotO > 1.0f) NdotO = 1.0f;
+
+        if (i == 0) {
+            Er = D_term * G_term * F_term / (4.0f * NdotI * NdotO);
+        }
+        else {
+            if (radicand <= 0.0f) {                
+                Et = D_term * G_term * F_term / (4.0f * NdotI * NdotO);
+            }
+            else {
+                Et = D_term * G_term * (vec3(1.0f) - F_term) / (NdotI * NdotO)
+                    * (fabsf(dot(in, m)) * fabsf(dot(out, m)) * no * no) / (no * dot(in, m) + ni * dot(out, m)) / (no * dot(in, m) + ni * dot(out, m));
+            }
+        }
+        
     }
 
-    G_term = G1 * G2;
-
-    IdotM = fabsf(IdotM);
-    F_term = Ks + (1.0f - Ks) * (1 - IdotM) * (1.0f - IdotM) * (1.0f - IdotM) * (1.0f - IdotM) * (1.0f - IdotM);
-
-
-    Ed = mat.Kd / PI;
-
-    NdotI = fabsf(NdotI);
-    if (NdotI > 1.0f) NdotI = 1.0f;
-    NdotO = fabsf(NdotO);
-    if (NdotO > 1.0f) NdotO = 1.0f;
-
-    Er = D_term * G_term * F_term / (4.0f * NdotI * NdotO);
-
-    return NdotI * (Ed + Er);
+    return NdotI * (Ed + Er + Et);
 }

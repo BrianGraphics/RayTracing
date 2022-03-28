@@ -10,17 +10,18 @@ const float Radians = PI/180.0f;    // Convert degrees to radians
 class Material
 {
  public:
-    vec3 Kd, Ks;
+    vec3 Kd, Ks, Kt;
     float alpha;
+    float IOR;
     unsigned int texid;
 
     virtual bool isLight() { return false; }
     virtual vec3 EvalRadiance() { return Kd; }
 
-    Material()  : Kd(vec3(1.0, 0.5, 0.0)), Ks(vec3(1,1,1)), alpha(1.0), texid(0) {}
-    Material(const vec3 d, const vec3 s, const float a) 
-        : Kd(d), Ks(s), alpha(a), texid(0) {}
-    Material(Material& o) { Kd=o.Kd;  Ks=o.Ks;  alpha=o.alpha;  texid=o.texid; }
+    Material()  : Kd(vec3(1.0, 0.5, 0.0)), Ks(vec3(1,1,1)), alpha(1.0), texid(0), Kt(vec3(0.0,0.0,0.0)), IOR(1.0f) {}
+    Material(const vec3 d, const vec3 s, const float a, const vec3 t, const float n)
+        : Kd(d), Ks(s), alpha(a), texid(0), Kt(t), IOR(n) {}
+    Material(Material& o) { Kd = o.Kd;  Ks = o.Ks;  alpha = o.alpha;  texid = o.texid; Kt = o.Kt; IOR = o.IOR; }
 
     //virtual void apply(const unsigned int program);
 };
@@ -130,6 +131,6 @@ float GeometryFactor(const Intersection& A, const Intersection& B);
 
 Intersection SampleSphere(Shape* object, vec3 center, float radius);
 
-float PdfBrdf(vec3 out, vec3 N, vec3 in, float alpha, float pd, float ps);
+float PdfBrdf(vec3 out, vec3 N, vec3 in, float alpha, float pd, float pr, float pt, float ni, float no);
 
-vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat);
+vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat, const float pd, const float ps, const float pt, float ni, float no);
