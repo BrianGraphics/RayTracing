@@ -265,22 +265,22 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         n = ni / no;        
 
         //Explicit light connection
-        L = SampleSphere(light, light->center, light->radius);        
-        Wi = normalize(L.P - P.P);
-        const Ray new_ray1(P.P, Wi);
+        //L = SampleSphere(light, light->center, light->radius);        
+        //Wi = normalize(L.P - P.P);
+        //const Ray new_ray1(P.P, Wi);
 
-        Intersection I = bvh.intersect(new_ray1);
-        if (I.isIntersect) {
-            p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
-            q = PdfBrdf(Wo, N, Wi, alpha, p_diffuse, p_reflection, p_transmission, ni, no) * rr;
-            if (p >= 0.000001f) {
-                if (I.shape == L.shape) {
-                    Wmis = p * p / (p * p + q * q);
-                    f = EvalScattering(Wo, N, Wi, *P.shape->material, p_diffuse, p_reflection, p_transmission, ni, no, P.t);
-                    C += W * Wmis * (f / p) * I.shape->material->EvalRadiance();
-                }
-            }
-        }
+        //Intersection I = bvh.intersect(new_ray1);
+        //if (I.isIntersect) {
+        //    p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
+        //    q = PdfBrdf(Wo, N, Wi, alpha, p_diffuse, p_reflection, p_transmission, ni, no) * rr;
+        //    if (p >= 0.000001f) {
+        //        if (I.shape == L.shape) {
+        //            Wmis = p * p / (p * p + q * q);
+        //            f = EvalScattering(Wo, N, Wi, *P.shape->material, p_diffuse, p_reflection, p_transmission, ni, no, P.t);
+        //            C += W * Wmis * (f / p) * I.shape->material->EvalRadiance();
+        //        }
+        //    }
+        //}
 
         // Extend path
         float r1 = myrandom(RNGen), r2 = myrandom(RNGen);
@@ -328,9 +328,10 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         W *= f / p;
 
         if (Q.shape->material->isLight()) {     
-            q = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, Q);
-            Wmis = p * p / (p * p + q * q);
-            C += W * Wmis * Q.shape->material->EvalRadiance();            
+            //q = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, Q);
+            //Wmis = p * p / (p * p + q * q);
+            //C += W * Wmis * Q.shape->material->EvalRadiance();            
+            C += W * Q.shape->material->EvalRadiance();            
             break;
         }
 
