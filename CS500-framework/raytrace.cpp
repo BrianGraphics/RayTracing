@@ -220,7 +220,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     vec3 W = vec3(1.0f, 1.0f, 1.0f);
     vec3 N(0.0f), Wi(0.0f), Wo(0.0f), f(0.0f);
     vec3 m(0.0f);
-    float p = 0.0f;
+    float p = 0.0f, q = 0.0f, Wmis = 0.0f;
     float s = 0.0f, p_diffuse = 0.0f, p_reflection = 0.0f, p_transmission = 0.0f;
     float alpha = 0.0f;
     float ni = 0.0f, no = 0.0f, n = 0.0f;
@@ -262,7 +262,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
             ni = P.shape->material->IOR;
             no = 1.0f;
         }
-        n = ni / no;
+        n = ni / no;        
 
         //Explicit light connection
         L = SampleSphere(light, light->center, light->radius);        
@@ -272,10 +272,12 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         Intersection I = bvh.intersect(new_ray1);
         if (I.isIntersect) {
             p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
+            q = PdfBrdf(Wo, N, Wi, alpha, p_diffuse, p_reflection, p_transmission, ni, no) * rr;
             if (p >= 0.000001f) {
                 if (I.shape == L.shape) {
-                    f = EvalScattering(Wo, N, Wi, *P.shape->material, p_diffuse, p_reflection, p_transmission, ni, no);
-                    C += W * (f / p) * I.shape->material->EvalRadiance();
+                    Wmis = p * p / (p * p + q * q);
+                    f = EvalScattering(Wo, N, Wi, *P.shape->material, p_diffuse, p_reflection, p_transmission, ni, no, P.t);
+                    C += W * Wmis * (f / p) * I.shape->material->EvalRadiance();
                 }
             }
         }
@@ -305,13 +307,12 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
             const float WdotM = dot(Wo, m);
             const float radicand = 1 - n * n * (1 - WdotM * WdotM);
             if (radicand < 0.0f) {
-                Wi = 2 * fabsf(dot(Wo, m)) * m - Wo;
+                Wi = 2 * fabsf(WdotM) * m - Wo;
             }
             else {                
                 const float sign = dot(Wo, N) >= 0 ? 1.0f : -1.0f;
                 Wi = (n * WdotM - sign * sqrtf(radicand)) * m - n * Wo;
-            }
-                
+            }                
         }
                
         Wi = normalize(Wi);
@@ -320,14 +321,16 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         Q = bvh.intersect(new_ray2);
         if (!Q.isIntersect) break;
 
-        f = EvalScattering(Wo, N, Wi, *P.shape->material, p_diffuse, p_reflection, p_transmission, ni, no);
+        f = EvalScattering(Wo, N, Wi, *P.shape->material, p_diffuse, p_reflection, p_transmission, ni, no, P.t);
         p = PdfBrdf(Wo, N, Wi, alpha, p_diffuse, p_reflection, p_transmission, ni, no) * rr;
         if (p < 0.000001f) break;
                 
         W *= f / p;
 
-        if (Q.shape->material->isLight()) {                  
-            C += W * Q.shape->material->EvalRadiance();            
+        if (Q.shape->material->isLight()) {     
+            q = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, Q);
+            Wmis = p * p / (p * p + q * q);
+            C += W * Wmis * Q.shape->material->EvalRadiance();            
             break;
         }
 
@@ -338,6 +341,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
 
     //if (glm::any(glm::isinf(C))) C = vec3(0.0f);
     if (glm::any(glm::isnan(C))) C = vec3(0.0f);
+
     return C;
 }
 
@@ -385,9 +389,9 @@ float PdfBrdf(vec3 out, vec3 N, vec3 in, float alpha, float pd, float pr, float 
     float Pd = 0.0f, Pr = 0.0f, Pt = 0.0f, D_term = 0.0f, r1 = myrandom(RNGen);
     float NdotM = 0.0f, alpha_square = alpha * alpha;    
 
-    if (pd > 0.0f) Pd = fabsf(dot(in, N)) / PI;
+    if (pd > 0.000001f) Pd = fabsf(dot(in, N)) / PI;
 
-    if (pr > 0.0f) {
+    if (pr > 0.000001f) {
         m = normalize(out + in);
         NdotM = dot(N, m);
         if (NdotM > 0.0f) {
@@ -398,7 +402,7 @@ float PdfBrdf(vec3 out, vec3 N, vec3 in, float alpha, float pd, float pr, float 
         Pr = D_term * fabsf(dot(m, N)) / (4.0f * fabsf(dot(in, m)));
     }
 
-    if (pt > 0.0f) {
+    if (pt > 0.000001f) {
         m = -normalize(no * in + ni * out);
         float n = ni / no;
         float radicand = 1 - n * n * (1 - dot(out, m) * dot(out, m));
@@ -413,8 +417,9 @@ float PdfBrdf(vec3 out, vec3 N, vec3 in, float alpha, float pd, float pr, float 
                 Pt = D_term * fabsf(dot(m, N)) / (4.0f * fabsf(dot(in, m)));
             }
             else {
-                Pt = D_term * fabsf(dot(m, N)) * no * no * fabsf(dot(in, m)) 
-                     / (no * dot(in, m) + ni * dot(out, m)) / (no * dot(in, m) + ni * dot(out, m));
+                const float IdotM = dot(in, m), OdotM = dot(out, m);
+                Pt = D_term * fabsf(dot(m, N)) * no * no * fabsf(dot(in, m))
+                    / ((no * IdotM + ni * OdotM) * (no * IdotM + ni * OdotM));
             }
         }
     }
@@ -424,10 +429,10 @@ float PdfBrdf(vec3 out, vec3 N, vec3 in, float alpha, float pd, float pr, float 
     return pd * Pd + pr * Pr + pt * Pt;
 }
 
-vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat, const float pd, const float ps, const float pt, float ni, float no) {
+vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat, const float pd, const float pr, const float pt, float ni, float no, float t) {
     vec3 Ed(0.0f), Er(0.0f), Et(0.0f), m(0.0f);
-    vec3 Ks = mat.Ks;
     vec3 F_term(0.0f);
+    const vec3 Ks = mat.Ks;
     float NdotM = 0.0f, NdotI = 0.0f, NdotO = 0.0f;
     float IdotM = 0.0f, OdotM = 0.0f;
     float alpha = sqrtf(2.0f / (mat.alpha + 2.0f));
@@ -438,16 +443,16 @@ vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat, const float 
     float radicand = 0.0f;
 
     // diffuse
-    if(pd > 0.0f) Ed = mat.Kd / PI;
+    if(pd > 0.000001f) Ed = mat.Kd / PI;   
 
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < 1; ++i) {
         // specular
-        if (i == 0) {
-            if (ps <= 0.0f) continue;
+        if (i < 1) {
+            if (pr <= 0.000001f) continue;
             m = normalize(out + in);            
         }
         else { // transmission
-            if (pt <= 0.0f) break;
+            if (pt <= 0.000001f) break;
             m = -normalize(ni * out + no * in);
             radicand = 1 - (ni / no) * (ni / no) * (1 - dot(out, m) * dot(out, m));
             if (radicand < 0.0f) m = normalize(out + in);
@@ -504,11 +509,13 @@ vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat, const float 
             Er = D_term * G_term * F_term / (4.0f * NdotI * NdotO);
         }
         else {
-            if (radicand <= 0.0f) {                
-                Et = D_term * G_term * F_term / (4.0f * NdotI * NdotO);
+            const float e = 2.71828f;
+            const vec3 At = dot(out, N) < 0.0f ? vec3(powf(e, t * log(mat.Kt.x)), powf(e, t * log(mat.Kt.y)), powf(e, t * log(mat.Kt.z))) : vec3(1.0f);
+            if (radicand < 0.0f) {                
+                Et = At * D_term * G_term * F_term / (4.0f * NdotI * NdotO);
             }
             else {
-                Et = D_term * G_term * (vec3(1.0f) - F_term) / (NdotI * NdotO)
+                Et = At * D_term * G_term * (vec3(1.0f) - F_term) / (NdotI * NdotO)
                     * (fabsf(dot(in, m)) * fabsf(dot(out, m)) * no * no) / (no * dot(in, m) + ni * dot(out, m)) / (no * dot(in, m) + ni * dot(out, m));
             }
         }

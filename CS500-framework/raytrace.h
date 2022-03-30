@@ -20,8 +20,8 @@ class Material
 
     Material()  : Kd(vec3(1.0, 0.5, 0.0)), Ks(vec3(1,1,1)), alpha(1.0), texid(0), Kt(vec3(0.0,0.0,0.0)), IOR(1.0f) {}
     Material(const vec3 d, const vec3 s, const float a, const vec3 t, const float n)
-        : Kd(d), Ks(s), alpha(a), texid(0), Kt(t), IOR(n) {}
-    Material(Material& o) { Kd = o.Kd;  Ks = o.Ks;  alpha = o.alpha;  texid = o.texid; Kt = o.Kt; IOR = o.IOR; }
+        : Kd(d), Ks(s), alpha(a), Kt(t), IOR(n), texid(0) {}
+    Material(Material& o) { Kd = o.Kd;  Ks = o.Ks;  alpha = o.alpha; Kt = o.Kt; IOR = o.IOR; texid = o.texid;}
 
     //virtual void apply(const unsigned int program);
 };
@@ -133,4 +133,4 @@ Intersection SampleSphere(Shape* object, vec3 center, float radius);
 
 float PdfBrdf(vec3 out, vec3 N, vec3 in, float alpha, float pd, float pr, float pt, float ni, float no);
 
-vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat, const float pd, const float ps, const float pt, float ni, float no);
+vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat, const float pd, const float pr, const float pt, float ni, float no, float t);
