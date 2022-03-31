@@ -434,7 +434,7 @@ vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat) {
     if (NdotI > 1.0f) NdotI = 1.0f;
     NdotO = fabsf(NdotO);
     if (NdotO > 1.0f) NdotO = 1.0f;
-
+    
     Er = D_term * G_term * F_term / (4.0f * NdotI * NdotO);
 
     return NdotI * (Ed + Er);
