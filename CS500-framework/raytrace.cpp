@@ -343,6 +343,9 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     if (glm::any(glm::isinf(C))) C = vec3(0.0f);
     if (glm::any(glm::isnan(C))) C = vec3(0.0f);
 
+    //if (C.x > 5.0f) C.x = 5.0f;
+    //if (C.y > 5.0f) C.y = 5.0f;
+    //if (C.z > 5.0f) C.z = 5.0f;
     return C;
 }
 
@@ -390,10 +393,11 @@ float PdfBrdf(vec3 out, vec3 N, vec3 in, float alpha, float pd, float pr, float 
     float Pd = 0.0f, Pr = 0.0f, Pt = 0.0f, D_term = 0.0f, r1 = myrandom(RNGen);
     float NdotM = 0.0f, alpha_square = alpha * alpha;    
 
-    if (pd != 0.0f) 
+    //if (pd != 0.0f) 
     Pd = fabsf(dot(in, N)) / PI;
 
-    if (pr != 0.0f) {
+    //if (pr != 0.0f) 
+    {
         m = normalize(out + in);
         NdotM = dot(N, m);
         if (NdotM > 0.0f) {
@@ -404,7 +408,8 @@ float PdfBrdf(vec3 out, vec3 N, vec3 in, float alpha, float pd, float pr, float 
         Pr = D_term * fabsf(NdotM) / (4.0f * fabsf(dot(in, m)));
     }
 
-    if (pt != 0.0f) {
+    //if (pt != 0.0f) 
+    {
         m = -normalize(no * in + ni * out);
         float n = ni / no;
         float radicand = 1 - n * n * (1 - dot(out, m) * dot(out, m));
@@ -445,7 +450,8 @@ vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat, const float 
     float radicand = 0.0f;
 
     // diffuse
-    Ed = mat.Kd / PI;   
+    if(pd != 0.0f)
+        Ed = mat.Kd / PI;   
 
     for (int i = 0; i < 2; ++i) {
         // specular
