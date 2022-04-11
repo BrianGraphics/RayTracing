@@ -11,17 +11,17 @@ class Material
 {
  public:
     vec3 Kd, Ks, Kt;
-    float alpha;
+    float alpha, GGX_alpha;
     float IOR;
     unsigned int texid;
 
     virtual bool isLight() { return false; }
     virtual vec3 EvalRadiance() { return Kd; }
 
-    Material()  : Kd(vec3(1.0, 0.5, 0.0)), Ks(vec3(1,1,1)), alpha(1.0), texid(0), Kt(vec3(0.0,0.0,0.0)), IOR(1.0f) {}
+    Material()  : Kd(vec3(1.0, 0.5, 0.0)), Ks(vec3(1,1,1)), alpha(1.0), texid(0), Kt(vec3(0.0,0.0,0.0)), IOR(1.0f) { GGX_alpha = 1.0f / sqrtf((1.0f + 2.0f) / 2.0f); }
     Material(const vec3 d, const vec3 s, const float a, const vec3 t, const float n)
-        : Kd(d), Ks(s), alpha(a), Kt(t), IOR(n), texid(0) {}
-    Material(Material& o) { Kd = o.Kd;  Ks = o.Ks;  alpha = o.alpha; Kt = o.Kt; IOR = o.IOR; texid = o.texid;}
+        : Kd(d), Ks(s), alpha(a), Kt(t), IOR(n), texid(0) { GGX_alpha = 1.0f / sqrtf((a + 2.0f) / 2.0f); }
+    Material(Material& o) { Kd = o.Kd;  Ks = o.Ks;  alpha = o.alpha; GGX_alpha = o.GGX_alpha; Kt = o.Kt; IOR = o.IOR; texid = o.texid; }
 
     //virtual void apply(const unsigned int program);
 };
@@ -134,3 +134,5 @@ Intersection SampleSphere(Shape* object, vec3 center, float radius);
 float PdfBrdf(vec3 out, vec3 N, vec3 in, float alpha, float pd, float pr, float pt, float ni, float no);
 
 vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat, const float pd, const float pr, const float pt, float ni, float no, float t);
+
+

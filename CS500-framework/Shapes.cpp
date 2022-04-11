@@ -201,14 +201,12 @@ bool Triangle::Intersect(Ray ray, Intersection& record)
     if (d == 0.0f) { return false; }
     
     u = dot(p, S) / d;
-    //if (u < 0.0f || u > 1.0f) { return false; }
-    if (u < e || u > 1.0f) { return false; }
+    if (u < 0.0f || u > 1.0f) { return false; }
 
     q = cross(S, E1);
     v = dot(D, q) / d;
     
-    //if(v < 0 || u + v > 1) { return false; }
-    if(v < e || u + v > 1) { return false; }
+    if(v < 0.0f || u + v > 1) { return false; }
     t = dot(E2, q) / d;
     if(t < e) { return false; }
 
