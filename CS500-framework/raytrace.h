@@ -85,7 +85,7 @@ class Sphere;
 class Ray;
 
 #include "acceleration.h"
-
+class BRDF;
 class Scene {
 public:
     int width, height;
@@ -125,14 +125,34 @@ public:
     
 };
 
+
+class BRDF {
+public:
+    Material mat;
+    vec3 t_m;   
+    vec3 _N;
+    float pd;
+    float pr;
+    float pt;
+    float ni;
+    float no;
+    float distance;
+    float D;
+
+public:
+    float PdfBrdf(const vec3 out, const vec3 N, const vec3 in);
+
+    vec3 EvalScattering(const vec3 out, const vec3 N, const vec3 in);
+
+    vec3  F_factor(const float d);
+    float D_factor(const vec3 m);
+    float G_factor(const vec3 in, const vec3 out, const vec3 m);
+};
+
 vec3 SampleLobe(vec3 A, float c, float phi);
 
 float GeometryFactor(const Intersection& A, const Intersection& B);
 
 Intersection SampleSphere(Shape* object, vec3 center, float radius);
-
-float PdfBrdf(vec3 out, vec3 N, vec3 in, float alpha, float pd, float pr, float pt, float ni, float no);
-
-vec3 EvalScattering(vec3 out, vec3 N, vec3 in, const Material& mat, const float pd, const float pr, const float pt, float ni, float no, float t);
 
 
