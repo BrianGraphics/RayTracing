@@ -74,6 +74,7 @@ public:
 
     Light(const vec3 e) : Material() { Kd = e; }
     virtual bool isLight() { return true; }
+
     //virtual void apply(const unsigned int program);
 };
 
@@ -138,15 +139,18 @@ public:
     float no;
     float distance;
     float D;
+    float _radicand;
 
 public:
+    vec3 SampleBrdf(const vec3 out, const vec3 N);
+
     float PdfBrdf(const vec3 out, const vec3 N, const vec3 in);
 
     vec3 EvalScattering(const vec3 out, const vec3 N, const vec3 in);
 
     vec3  F_factor(const float d);
     float D_factor(const vec3 m);
-    float G_factor(const vec3 in, const vec3 out, const vec3 m);
+    float G_factor(const vec3 in, const vec3 out, const vec3 m);    
 };
 
 vec3 SampleLobe(vec3 A, float c, float phi);

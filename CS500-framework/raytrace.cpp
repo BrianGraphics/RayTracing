@@ -276,53 +276,30 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         brdf.pt = p_transmission;
         brdf.distance = P.t;     
         brdf._N = N;
-        //Explicit light connection
-        //L = SampleSphere(light, light->center, light->radius);        
-        //Wi = normalize(L.P - P.P);
-        //const Ray new_ray1(P.P, Wi);
+        brdf._radicand = 0.0f;
 
-        //Intersection I = bvh.intersect(new_ray1);
+        //Explicit light connection
+        L = SampleSphere(light, light->center, light->radius);        
+        Wi = normalize(L.P - P.P);
+        const Ray new_ray1(P.P, Wi);
+        I = bvh.intersect(new_ray1);
         if (I.isIntersect) {
             p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
             q = brdf.PdfBrdf(Wo, N, Wi) * rr;
             if (p >= 0.000001f && !isnan(p)) {
-                if (I.shape == L.shape) {
-                    Wmis = p*p / (p * p + q * q);
-                    f = brdf.EvalScattering(Wo, N, Wi);
-                    C += W * Wmis * (f / p) * I.shape->material->EvalRadiance();                  
-                    //C += W * (f / p) * I.shape->material->EvalRadiance();                  
+                if (I.P == L.P) {                    
+                    //Wmis = 1.0f;
+                    Wmis = p * p / (p * p + q * q);
+                    f = brdf.EvalScattering(Wo, N, Wi);                    
+                    C += W * Wmis * (f / p) * I.shape->material->EvalRadiance();                 
                 }
             }
         }
 
         // Extend path
-        float r1 = myrandom(RNGen), r2 = myrandom(RNGen);
-        r2 *= 2.0f * PI;       
 
         // SampleBRDF, choose random direction
-        const float random = myrandom(RNGen);
-        if (random <= p_diffuse) {                     // choice = diffuse        
-            r1 = sqrtf(r1);  
-            Wi = SampleLobe(N, r1, r2); 
-        }
-        else if(random <= (p_diffuse + p_reflection)) {  // choice = specular        
-            r1 = cos(atan(alpha * sqrtf(r1) / sqrtf(1 - r1)));
-            m = SampleLobe(N, r1, r2);
-            Wi = 2 * fabsf(dot(Wo, m)) * m - Wo; 
-        }
-        else {                                         // choice = transmission
-            r1 = cos(atan(alpha * sqrtf(r1) / sqrtf(1 - r1)));
-            m = SampleLobe(N, r1, r2);
-            const float WdotM = dot(Wo, m);
-            const float radicand = 1 - n * n * (1 - WdotM * WdotM);
-            if (radicand < 0.0f) {
-                Wi = 2 * fabsf(WdotM) * m - Wo;
-            }
-            else {                
-                const float sign = dot(Wo, N) >= 0 ? 1.0f : -1.0f;
-                Wi = (n * WdotM - sign * sqrtf(radicand)) * m - n * Wo;
-            }                            
-        }
+        Wi = brdf.SampleBrdf(Wo, N);
 
         const Ray new_ray2(P.P, Wi);
 
@@ -337,10 +314,11 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         W *= f / p;            
 
         if (Q.shape->material->isLight()) {     
-            q = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, Q);
+            q = (1.0f / (4.0f * PI * light->radius * light->radius)) / GeometryFactor(P, Q);
+            //Wmis = 1.0f;
             Wmis = p * p / (p * p + q * q);
+            if (Wmis < 0.05) Wmis = 1.0f;
             C += W * Wmis * Q.shape->material->EvalRadiance();
-            //C += W * Q.shape->material->EvalRadiance();
             break;
         }
 
@@ -391,10 +369,44 @@ float GeometryFactor(const Intersection& A, const Intersection& B)
     return fabsf(dot(A.N, D) * dot(B.N, D) / (DD * DD));
 }
 
+vec3 BRDF::SampleBrdf(const vec3 out, const vec3 N) 
+{
+    float const r  = myrandom(RNGen);
+    float const r1 = myrandom(RNGen);
+    float const r2 = myrandom(RNGen) * 2.0f * PI;    
+    float const alpha = mat.GGX_alpha;
+    float const ttr = -1.0f;
+    float tmp = 0.0f;
+    vec3 m(0.0f);
+
+    if (r <= pd) {                     // choice = diffuse                
+        tmp = sqrtf(r1);
+        return SampleLobe(N, tmp, r2);
+    }
+    else if (r <= (pd + pr)) {  // choice = specular        
+        tmp = cos(atan(alpha * sqrtf(r1) / sqrtf(1.0f - r1)));
+        m = SampleLobe(N, tmp, r2);
+        return 2.0f * fabsf(dot(out, m)) * m - out;
+    }
+    else {                                         // choice = transmission
+        tmp = cos(atan(alpha * sqrtf(r1) / sqrtf(1.0f - r1)));
+        m = SampleLobe(N, tmp, r2);
+        const float WdotM = dot(out, m);
+        const float radicand = 1.0f - (ni / no) * (ni / no) * (1.0f - WdotM * WdotM);
+        if (radicand < ttr) {
+            return 2.0f * fabsf(WdotM) * m - out;
+        }
+        else {
+            const float sign = dot(out, N) >= 0 ? 1.0f : -1.0f;
+            return ((ni / no) * WdotM - sign * sqrtf(radicand)) * m - (ni / no) * out;
+        }
+    }
+}
+
 float BRDF::PdfBrdf(const vec3 out, const vec3 N, const vec3 in) {
     vec3 m_r(0.0f), m_t(0.0f);
     float Pd = 0.0f, Pr = 0.0f, Pt = 0.0f;
-    float const ttr = 0.0f;
+    float const ttr = -1.0f;
 
     if (pd != 0.0f) 
         Pd = fabsf(dot(in, N)) / PI;
@@ -409,8 +421,8 @@ float BRDF::PdfBrdf(const vec3 out, const vec3 N, const vec3 in) {
     if (pt != 0.0f) 
     {
         m_t = -normalize(no * in + ni * out);        
-        float const radicand = 1.0f - (ni / no) * (ni / no) * (1.0f - dot(out, m_t) * dot(out, m_t));
-        if (radicand < ttr) {
+        _radicand = 1.0f - (ni / no) * (ni / no) * (1.0f - dot(out, m_t) * dot(out, m_t));
+        if (_radicand < ttr) {
             m_t = normalize(out + in);
             Pt = D_factor(m_t) * fabsf(dot(m_t, N))
                  / (4.0f * fabsf(dot(in, m_t)));
@@ -426,7 +438,7 @@ float BRDF::PdfBrdf(const vec3 out, const vec3 N, const vec3 in) {
 }
 
 vec3 BRDF::EvalScattering(const vec3 out, const vec3 N, const vec3 in) {    
-    float const ttr = 0.0f;
+    float const ttr = -1.0f;
     vec3 Ed(0.0f), Er(0.0f), Et(0.0f), m_r(0.0f), m_t(0.0f);
 
     // diffuse
@@ -439,12 +451,12 @@ vec3 BRDF::EvalScattering(const vec3 out, const vec3 N, const vec3 in) {
              / (4 * fabsf(dot(in, N)) * fabsf(dot(out, N)));
     }
 
-    if (pt != 0.0f) {
-        m_t = -normalize(no * in + ni * out);
-        float const radicand = 1.0f - (ni / no) * (ni/no) * (1.0f - dot(out, m_t) * dot(out, m_t));
-        const vec3 At = dot(out, N) < 0.0f ? vec3(exp(distance * log(mat.Kt.x)), exp(distance * log(mat.Kt.y)), exp(distance * log(mat.Kt.z))) : vec3(1.0f);
+    if (pt != 0.0f) 
+    {
+        m_t = -normalize(no * in + ni * out);       
+        const vec3 At = dot(out, N) < 0.0f ? vec3(exp(distance * log(mat.Kt.x)), exp(distance * log(mat.Kt.y)), exp(distance * log(mat.Kt.z))) : vec3(1.0f);      
         
-        if (radicand < ttr) {
+        if (_radicand < ttr) {
             m_t = normalize(out + in);
             Et = At * D_factor(m_t) * G_factor(in, out, m_t) * F_factor(dot(in, m_t))
                 / (4.0f * fabsf(dot(in, N)) * fabsf(dot(out, N)));
