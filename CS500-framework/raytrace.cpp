@@ -317,7 +317,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
             q = (1.0f / (4.0f * PI * light->radius * light->radius)) / GeometryFactor(P, Q);
             //Wmis = 1.0f;
             Wmis = p * p / (p * p + q * q);
-            if (Wmis < 0.05) Wmis = 1.0f;
+            //if (Wmis < 0.05) Wmis = 1.0f;
             C += W * Wmis * Q.shape->material->EvalRadiance();
             break;
         }
@@ -375,7 +375,7 @@ vec3 BRDF::SampleBrdf(const vec3 out, const vec3 N)
     float const r1 = myrandom(RNGen);
     float const r2 = myrandom(RNGen) * 2.0f * PI;    
     float const alpha = mat.GGX_alpha;
-    float const ttr = -1.0f;
+    float const ttr = 0.0f;
     float tmp = 0.0f;
     vec3 m(0.0f);
 
@@ -397,7 +397,7 @@ vec3 BRDF::SampleBrdf(const vec3 out, const vec3 N)
             return 2.0f * fabsf(WdotM) * m - out;
         }
         else {
-            const float sign = dot(out, N) >= 0 ? 1.0f : -1.0f;
+            const float sign = dot(out, N) >= 0 ? 1.0f : -1.0f; 
             return ((ni / no) * WdotM - sign * sqrtf(radicand)) * m - (ni / no) * out;
         }
     }
@@ -406,7 +406,7 @@ vec3 BRDF::SampleBrdf(const vec3 out, const vec3 N)
 float BRDF::PdfBrdf(const vec3 out, const vec3 N, const vec3 in) {
     vec3 m_r(0.0f), m_t(0.0f);
     float Pd = 0.0f, Pr = 0.0f, Pt = 0.0f;
-    float const ttr = -1.0f;
+    float const ttr = 0.0f;
 
     if (pd != 0.0f) 
         Pd = fabsf(dot(in, N)) / PI;
@@ -438,7 +438,7 @@ float BRDF::PdfBrdf(const vec3 out, const vec3 N, const vec3 in) {
 }
 
 vec3 BRDF::EvalScattering(const vec3 out, const vec3 N, const vec3 in) {    
-    float const ttr = -1.0f;
+    float const ttr = 0.0f;
     vec3 Ed(0.0f), Er(0.0f), Et(0.0f), m_r(0.0f), m_t(0.0f);
 
     // diffuse
