@@ -80,10 +80,11 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 // Scene
-//class Realtime;
+////////////////////////////////////////////////////////////////////////////////
 class Shape;
 class Sphere;
 class Ray;
+class Sky;
 
 #include "acceleration.h"
 class BRDF;
@@ -96,6 +97,7 @@ public:
     std::vector<Shape*> vectorOfShapes;
     Sphere* light;
     vec3 lightPos;
+    Sky* sky;
 
     Scene();
     void Finit();
@@ -119,11 +121,7 @@ public:
     // Find front most object
     Intersection TraceRay(Ray ray);
 
-    Color TracePath(Ray& ray, AccelerationBvh& bvh);
-    
-   
-
-    
+    Color TracePath(Ray& ray, AccelerationBvh& bvh);          
 };
 
 
@@ -158,5 +156,22 @@ vec3 SampleLobe(vec3 A, float c, float phi);
 float GeometryFactor(const Intersection& A, const Intersection& B);
 
 Intersection SampleSphere(Shape* object, vec3 center, float radius);
+
+
+class Sky {
+public:
+    float radius;
+    int width;
+    int height;
+    float* pBuffer;
+    float* pUDist;
+    Color* hdr;
+
+    void PreProcessing();
+
+    Intersection SampleAsLight();
+    float PdfAsLight(const Intersection& B) const;
+    vec3 Radiance(const Intersection& A);
+};
 
 

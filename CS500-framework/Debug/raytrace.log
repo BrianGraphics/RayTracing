@@ -17,37 +17,34 @@ D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(163,1): warni
 D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(164,1): warning C4010: single-line comment contains line-continuation character
 D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.h(62,1): warning C4099: 'MeshData': type name first seen using 'class' now seen using 'struct'
 D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.h(61): message : see declaration of 'MeshData'
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(45,23): warning C4018: '<': signed/unsigned mismatch
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(66,13): warning C4018: '<': signed/unsigned mismatch
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(190,56): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(191,57): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(353,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(353,20): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(353,52): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(353,42): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(374,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(374,20): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(375,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(375,20): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(376,45): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(376,20): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
-  main.cpp
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(94,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(100,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(106,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(112,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(118,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(124,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(130,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(136,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(145,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(151,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(161,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(41,13): warning C4068: unknown pragma 'STDC'
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(50,13): warning C4068: unknown pragma 'STDC'
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(163,1): warning C4010: single-line comment contains line-continuation character
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(164,1): warning C4010: single-line comment contains line-continuation character
-D:\GitHub\GAM541\RayTracing\CS500-framework\main.cpp(50,54): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\main.cpp(82,18): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-  Generating Code...
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(46,23): warning C4018: '<': signed/unsigned mismatch
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(67,13): warning C4018: '<': signed/unsigned mismatch
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(191,56): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(192,57): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(359,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(359,20): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(359,52): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(359,42): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(380,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(380,20): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(381,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(381,20): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(382,45): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(382,20): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(551,32): warning C4018: '<': signed/unsigned mismatch
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(554,39): warning C4018: '<': signed/unsigned mismatch
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(559,53): warning C4018: '<': signed/unsigned mismatch
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(560,23): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(598,11): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(599,11): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(608,17): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(609,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(620,12): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(621,12): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(630,50): warning C4244: '+=': conversion from 'double' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+acceleration.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/SAFESEH' specification
   raytrace.vcxproj -> D:\GitHub\GAM541\RayTracing\CS500-framework\Debug\raytrace.exe

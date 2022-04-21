@@ -93,6 +93,50 @@ void WriteHdrImage(const std::string outName, const int width, const int height,
     delete data;
 }
 
+void ReadHdrImage(const std::string inName, Scene* scene)
+{
+    // Turn image from a 2D-bottom-up array of Vector3D to an top-down-array of floats
+    int width  = 0;
+    int height = 0;
+
+    // Write image to file in HDR (a.k.a RADIANCE) format
+    rgbe_header_info info;
+    char errbuf[100] = { 0 };
+
+    FILE* fp = fopen(inName.c_str(), "rb");
+    info.valid = false;
+    int r = RGBE_ReadHeader(fp, &width, &height, &info, errbuf);
+    if (r != RGBE_RETURN_SUCCESS)
+        printf("error: %s\n", errbuf);
+    
+    float* data = new float[width * height * 3];
+    scene->sky = new Sky();
+    scene->sky->width  = width;
+    scene->sky->height = height;
+    scene->sky->hdr = new Color[width * height];
+    for (int y = 0; y < height; y++)
+        for (int x = 0; x < width; x++)
+            scene->sky->hdr[y * width + x] = Color(0, 0, 0);
+
+    scene->sky->radius = 1000.0f;
+
+    r = RGBE_ReadPixels_RLE(fp, data, width, height, errbuf);
+    if (r != RGBE_RETURN_SUCCESS)
+        printf("error: %s\n", errbuf);
+    fclose(fp);
+
+    float* dp = data;
+    for (int y = height - 1; y >= 0; --y) {
+        for (int x = 0; x < width; ++x) {
+            scene->sky->hdr[y * width + x][0] = *dp++;
+            scene->sky->hdr[y * width + x][1] = *dp++;
+            scene->sky->hdr[y * width + x][2] = *dp++;
+        }
+    }
+
+    delete data;
+}
+
 ////////////////////////////////////////////////////////////////////////
 int main(int argc, char** argv)
 {
@@ -100,24 +144,24 @@ int main(int argc, char** argv)
 
     // Read the command line argument
     std::string inName =  (argc > 1) ? argv[1] : "testscene.scn";
-    //std::string inName =  (argc > 1) ? argv[1] : "testleg.scn";
     std::string hdrName = inName;
 
     hdrName.replace(hdrName.size()-3, hdrName.size(), "hdr");
 
     // Read the scene, calling scene.Command for each line.
-    ReadScene(inName, scene);
-
-    scene->Finit();
+    ReadHdrImage("Mono_Lake_B_Ref.hdr", scene);
+    scene->sky->PreProcessing();
+    ReadScene(inName, scene);    
 
     // Allocate and clear an image array
-    Color *image =  new Color[scene->width*scene->height];
+    Color *image =  new Color[scene->width*scene->height];    
     for (int y=0;  y<scene->height;  y++)
         for (int x=0;  x<scene->width;  x++)
             image[y*scene->width + x] = Color(0,0,0);
 
     // RayTrace the image
-    scene->TraceImage(image, 1);
+    scene->TraceImage(image, 512);
+    //image = scene->sky->hdr;
 
     // Write the image
     WriteHdrImage(hdrName, scene->width, scene->height, image);

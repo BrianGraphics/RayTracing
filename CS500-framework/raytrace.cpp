@@ -38,6 +38,7 @@ Scene::Scene()
 
 void Scene::Finit()
 {
+   
 }
 
 void Scene::triangleMesh(MeshData* mesh) 
@@ -175,7 +176,7 @@ void Scene::TraceImage(Color* image, const int pass)
     const vec3 X = rx * transformVector(camera.orientation, Xaxis());
     const vec3 Y = camera.ry * transformVector(camera.orientation, Yaxis());
     const vec3 Z = transformVector(camera.orientation, Zaxis());
-
+   
     AccelerationBvh bvh(vectorOfShapes);
     Color* tmp = new Color[width * height];
     for (int y = 0; y < height; y++)
@@ -197,6 +198,7 @@ void Scene::TraceImage(Color* image, const int pass)
 
         fprintf(stderr, "\n");
     }
+    delete tmp;
 }
 
 Intersection Scene::TraceRay(Ray ray) {
@@ -234,7 +236,8 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
 
     // hit light so return light
     if (P.shape->material->isLight()) {
-        return P.shape->material->Kd; // return EvalRadiance(P)
+        //return P.shape->material->Kd; // return EvalRadiance(P)
+        return sky->Radiance(P); // return EvalRadiance(P)
     }
 
     // init
@@ -279,25 +282,29 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         brdf._radicand = 0.0f;
 
         //Explicit light connection
-        L = SampleSphere(light, light->center, light->radius);        
+        //L = SampleSphere(light, light->center, light->radius);        
+        L = sky->SampleAsLight();
         Wi = normalize(L.P - P.P);
         const Ray new_ray1(P.P, Wi);
         I = bvh.intersect(new_ray1);
-        if (I.isIntersect) {
-            p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
+        if (I.isIntersect) 
+        {
+            //p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
+            p = sky->PdfAsLight(L)/GeometryFactor(P,L);
             q = brdf.PdfBrdf(Wo, N, Wi) * rr;
-            if (p >= 0.000001f && !isnan(p)) {
-                if (I.P == L.P) {                    
-                    //Wmis = 1.0f;
+            if (p >= 0.000001f && !isnan(p)) 
+            {
+                //if (I.P == L.P) 
+                {                    
                     Wmis = p * p / (p * p + q * q);
                     f = brdf.EvalScattering(Wo, N, Wi);                    
                     C += W * Wmis * (f / p) * I.shape->material->EvalRadiance();                 
+                    //C += W * (f / p) * sky->Radiance(I);                 
                 }
             }
         }
 
         // Extend path
-
         // SampleBRDF, choose random direction
         Wi = brdf.SampleBrdf(Wo, N);
 
@@ -314,11 +321,10 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         W *= f / p;            
 
         if (Q.shape->material->isLight()) {     
-            q = (1.0f / (4.0f * PI * light->radius * light->radius)) / GeometryFactor(P, Q);
-            //Wmis = 1.0f;
+            q = sky->PdfAsLight(Q) / GeometryFactor(P, Q);
             Wmis = p * p / (p * p + q * q);
             if (Wmis < 0.05) Wmis = 1.0f;
-            C += W * Wmis * Q.shape->material->EvalRadiance();
+            C += W * Wmis * sky->Radiance(Q);
             break;
         }
 
@@ -533,4 +539,97 @@ float BRDF::G_factor(const vec3 in, const vec3 out, const vec3 m)
     }
 
     return G1_first * G1_second;
+}
+
+void Sky::PreProcessing()
+{
+    pBuffer = new float[width * (height + 1)];
+    pUDist = &pBuffer[width * height];
+    float* pSinTheta = new float[height];
+    float angleFrac = PI / float(height);
+    float theta = angleFrac * 0.5f;
+    for (unsigned int i = 0; i < height; i++, theta += angleFrac)
+        pSinTheta[i] = sin(theta);
+
+    for (unsigned int i = 0, m = 0; i < width; i++, m += height) {
+        float* pVDist = &pBuffer[m];
+        //unsigned int k = i * 3;
+        pVDist[0] = 0.2126f * hdr[i].r + 0.7152f * hdr[i].g + 0.0722f * hdr[i].b;
+        pVDist[0] *= pSinTheta[0];
+        for (unsigned int j = 1, k = (width + i); j < height; j++, k += width) {
+            float lum = 0.2126 * hdr[k].r + 0.7152 * hdr[k].g + 0.0722f * hdr[k].b;
+            pVDist[j] = pVDist[j - 1] + lum * pSinTheta[j];
+        }
+        if (i == 0)
+            pUDist[i] = pVDist[height - 1];
+        else
+            pUDist[i] = pUDist[i - 1] + pVDist[height - 1];
+    }
+}
+
+Intersection Sky::SampleAsLight()
+{
+    Intersection B;
+    double u = myrandom(RNGen);
+    double v = myrandom(RNGen);
+    float maxUVal = pUDist[width - 1];
+    float* pUPos = std::lower_bound(pUDist, pUDist + width, u * maxUVal);
+    int iu = pUPos - pUDist;
+    float* pVDist = &pBuffer[height * iu];
+    float* pVPos = std::lower_bound(pVDist, pVDist + height,
+        v * pVDist[height - 1]);
+    int iv = pVPos - pVDist;
+    double phi = -2 * PI * iu / width;
+    //double phi = ibl->angle - 2 * PI * iu / ibl->width;
+    double theta = PI * iv / height;
+    B.N = vec3(sin(theta) * cos(phi),
+        sin(theta) * sin(phi),
+        cos(theta));
+    B.P = B.N * radius;
+    B.shape = NULL;
+    return B;
+}
+
+float Sky::PdfAsLight(const Intersection& B) const
+{
+    vec3 P = normalize(B.P);
+    double fu = (atan2(P[1], P[0])) / (PI * 2.0f);
+    fu = fu - floor(fu); // Wrap to be within 0...1
+    int u = floor(width * fu);
+    int v = floor(height * acos(P[2]) / PI);
+    float angleFrac = PI / float(height);
+    float* pVDist = &pBuffer[height * u];
+    float pdfU = (u == 0) ? (pUDist[0]) : (pUDist[u] - pUDist[u - 1]);
+    pdfU /= pUDist[width - 1];
+    pdfU *= width / (PI * 2.0f);
+    float pdfV = (v == 0) ? (pVDist[0]) : (pVDist[v] - pVDist[v - 1]);
+    pdfV /= pVDist[height - 1];
+    pdfV *= height / PI;
+    float theta = angleFrac * 0.5 + angleFrac * v;
+    float pdf = pdfU * pdfV * sin(theta) / (4.0 * PI * radius * radius);
+    //printf("(%f %f %f) %d %d %g\n", P[0], P[1], P[2], u, v, pdf);
+    return pdf;
+}
+
+vec3 Sky::Radiance(const Intersection& A)
+{       
+    vec3 P = normalize(A.P);
+    double u = (atan2(P[1], P[0])) / (PI * 2.0f);
+    u = u - floor(u); // Wrap to be within 0...1
+    double v = acos(P[2]) / PI;
+    int i0 = floor(u * width);
+    int j0 = floor(v * height);
+    double uw[2], vw[2];
+    uw[1] = u * width - i0; uw[0] = 1.0 - uw[1];
+    vw[1] = v * height - j0; vw[0] = 1.0 - vw[1];
+    vec3 r(0.0f, 0.0f, 0.0f);
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            int k = (((j0 + j) % height) * width + ((i0 + i) % width));
+            for (int c = 0; c < 3; c++) {
+                r[c] += uw[i] * vw[j] * hdr[k][c];
+            }
+        }
+    }
+    return r;
 }

@@ -39,9 +39,9 @@ bool Sphere::Intersect(Ray ray, Intersection& record)
 
         if (t_m > t_p)
             return false;
-        else if (t_m >= e)
+        else if (t_m > 0.0f)
             t = t_m;
-        else if (t_p >= e)
+        else if (t_p > 0.0f)
             t = t_p;
         else
             return false;
