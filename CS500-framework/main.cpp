@@ -149,7 +149,7 @@ int main(int argc, char** argv)
     hdrName.replace(hdrName.size()-3, hdrName.size(), "hdr");
 
     // Read the scene, calling scene.Command for each line.
-    ReadHdrImage("Mono_Lake_B_Ref.hdr", scene);
+    ReadHdrImage("Mono_Lake_B_Ref_R.hdr", scene);
     scene->sky->PreProcessing();
     ReadScene(inName, scene);    
 
@@ -160,7 +160,7 @@ int main(int argc, char** argv)
             image[y*scene->width + x] = Color(0,0,0);
 
     // RayTrace the image
-    scene->TraceImage(image, 512);
+    scene->TraceImage(image, 1024);
     //image = scene->sky->hdr;
 
     // Write the image

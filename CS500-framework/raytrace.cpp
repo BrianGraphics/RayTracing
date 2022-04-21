@@ -323,7 +323,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         if (Q.shape->material->isLight()) {     
             q = sky->PdfAsLight(Q) / GeometryFactor(P, Q);
             Wmis = p * p / (p * p + q * q);
-            if (Wmis < 0.05) Wmis = 1.0f;
+            //if (Wmis < 0.05) Wmis = 1.0f;
             C += W * Wmis * sky->Radiance(Q);
             break;
         }
@@ -333,6 +333,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         N = P.N;
     }
 
+    if (glm::all(glm::isnan(C))) C = vec3(0.0f);
     return C;
 }
 

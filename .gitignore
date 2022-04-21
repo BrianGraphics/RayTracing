@@ -47,3 +47,6 @@ CS500-framework/Debug/vc142.pdb
 *.tlog
 *.pdb
 *.obj
+*.pdb
+*.obj
+*.tlog
