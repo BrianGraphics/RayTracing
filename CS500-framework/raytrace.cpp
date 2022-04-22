@@ -169,10 +169,14 @@ void Scene::Command(const std::vector<std::string>& strings,
 
 void Scene::TraceImage(Color* image, const int pass)
 {
-    float rx = camera.ry * static_cast<float>(width) / static_cast<float>(height);
+    float D = camera.D;
+    float r = camera.W * sqrtf(myrandom(RNGen));
+    float theta = 2.0f * PI * r * myrandom(RNGen);
+    float rx = r * cosf(theta);
+    float ry = r * sinf(theta);    
     float dx = 0.0f, dy = 0.0f;
     const float rr = 0.8f;
-    const vec3 X = rx * transformVector(camera.orientation, Xaxis());
+    const vec3 X = camera.ry * static_cast<float>(width) / static_cast<float>(height) * transformVector(camera.orientation, Xaxis());
     const vec3 Y = camera.ry * transformVector(camera.orientation, Yaxis());
     const vec3 Z = transformVector(camera.orientation, Zaxis());
 
@@ -189,11 +193,12 @@ void Scene::TraceImage(Color* image, const int pass)
             for (int x = 0; x < width; x++) {               
                 dx = 2 * (x + myrandom(RNGen)) / width - 1.0f;
                 dy = 2 * (y + myrandom(RNGen)) / height - 1.0f;
-                Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
+                //Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
+                Ray ray(camera.eye + rx * X + ry * Y, glm::normalize((dx * D - rx) * X + (dy * D - ry) * Y - D * Z));
                 int index = y * width + x;
                 //vec3 color = TracePath(ray, bvh);
                 tmp[index] += TracePath(ray, bvh);
-                if (myrandom(RNGen) <= rr) image[index] = tmp[index] / static_cast<float>(pass);
+                if (myrandom(RNGen) >= rr) image[index] = tmp[index] / static_cast<float>(pass);
             }
         }
 
@@ -242,7 +247,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     Wo = normalize(-ray.D);
 
     // extend ray
-    while (myrandom(RNGen) <= rr) {        
+    while (myrandom(RNGen) < rr) {        
         //Explicit light connection
         L = SampleSphere(light, light->center, light->radius);        
         Wi = normalize(L.P - P.P);
@@ -252,6 +257,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         if (I.isIntersect) {
             p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
             if (p >= 0.000001f) {
+                //if (glm::length(I.P - L.P) < 0.001f) {
                 if (I.shape == L.shape) {
                     f = EvalScattering(Wo, N, Wi, *P.shape->material);
                     C += W * (f / p) * I.shape->material->EvalRadiance();
