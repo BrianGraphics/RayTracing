@@ -47,18 +47,19 @@ class VertexData
     {}
 };
 
+class Ray;
 class Camera
 {
 public:
     Camera() = default;
     Camera(const vec3& _eye, const quat& _o, const float _ry) : eye(_eye), orientation(_o), ry(_ry) {}
-
+    
     vec3 eye;
     quat orientation;
     float ry;
 
     float D = 2.0f;
-    float W = 0.2f;
+    float W = 0.5f;
 };
 
 struct MeshData
@@ -86,7 +87,6 @@ public:
 //class Realtime;
 class Shape;
 class Sphere;
-class Ray;
 
 #include "acceleration.h"
 class BRDF;

@@ -1,22 +1,4 @@
-﻿  Shapes.cpp
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(94,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(100,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(106,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(112,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(118,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(124,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(130,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(136,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(145,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(151,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(161,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(41,13): warning C4068: unknown pragma 'STDC'
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(50,13): warning C4068: unknown pragma 'STDC'
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(163,1): warning C4010: single-line comment contains line-continuation character
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(164,1): warning C4010: single-line comment contains line-continuation character
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.h(62,1): warning C4099: 'MeshData': type name first seen using 'class' now seen using 'struct'
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.h(61): message : see declaration of 'MeshData'
-  main.cpp
+﻿  main.cpp
 D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(94,1): warning C4141: 'inline': used more than once
 D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(100,1): warning C4141: 'inline': used more than once
 D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(106,1): warning C4141: 'inline': used more than once
@@ -50,39 +32,26 @@ D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(41,13): warni
 D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(50,13): warning C4068: unknown pragma 'STDC'
 D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(163,1): warning C4010: single-line comment contains line-continuation character
 D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(164,1): warning C4010: single-line comment contains line-continuation character
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.h(62,1): warning C4099: 'MeshData': type name first seen using 'class' now seen using 'struct'
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.h(61): message : see declaration of 'MeshData'
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.h(67,1): warning C4099: 'MeshData': type name first seen using 'class' now seen using 'struct'
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.h(66): message : see declaration of 'MeshData'
 D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(45,23): warning C4018: '<': signed/unsigned mismatch
 D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(66,13): warning C4018: '<': signed/unsigned mismatch
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(190,56): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(191,57): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(349,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(349,20): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(349,52): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(349,42): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(370,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(370,20): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(371,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(371,20): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(372,45): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(372,20): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
-  readAssimpFile.cpp
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(94,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(100,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(106,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(112,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(118,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(124,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(130,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(136,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(145,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(151,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\vector.hpp(161,1): warning C4141: 'inline': used more than once
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(41,13): warning C4068: unknown pragma 'STDC'
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(50,13): warning C4068: unknown pragma 'STDC'
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(163,1): warning C4010: single-line comment contains line-continuation character
-D:\GitHub\GAM541\RayTracing\CS500-framework\libs\bvh\utilities.hpp(164,1): warning C4010: single-line comment contains line-continuation character
-D:\GitHub\GAM541\RayTracing\CS500-framework\readAssimpFile.cpp(116,29): warning C4018: '<': signed/unsigned mismatch
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(173,40): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(174,17): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(194,56): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(195,57): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(216,27): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(217,24): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(376,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(376,20): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(376,52): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(376,42): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(397,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(397,20): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(398,30): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(398,20): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(399,45): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+D:\GitHub\GAM541\RayTracing\CS500-framework\raytrace.cpp(399,20): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
   Generating Code...
   LINK : /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
   raytrace.vcxproj -> D:\GitHub\GAM541\RayTracing\CS500-framework\Release\raytrace.exe
