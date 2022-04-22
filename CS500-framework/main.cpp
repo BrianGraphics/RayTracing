@@ -113,12 +113,11 @@ void ReadHdrImage(const std::string inName, Scene* scene)
     scene->sky = new Sky();
     scene->sky->width  = width;
     scene->sky->height = height;
+    scene->sky->radius = 1000.0f;
     scene->sky->hdr = new Color[width * height];
     for (int y = 0; y < height; y++)
         for (int x = 0; x < width; x++)
             scene->sky->hdr[y * width + x] = Color(0, 0, 0);
-
-    scene->sky->radius = 1000.0f;
 
     r = RGBE_ReadPixels_RLE(fp, data, width, height, errbuf);
     if (r != RGBE_RETURN_SUCCESS)
@@ -149,7 +148,7 @@ int main(int argc, char** argv)
     hdrName.replace(hdrName.size()-3, hdrName.size(), "hdr");
 
     // Read the scene, calling scene.Command for each line.
-    ReadHdrImage("Mono_Lake_B_Ref_R.hdr", scene);
+    ReadHdrImage("Barce_Rooftop_C_3k.hdr", scene);
     scene->sky->PreProcessing();
     ReadScene(inName, scene);    
 
@@ -160,8 +159,7 @@ int main(int argc, char** argv)
             image[y*scene->width + x] = Color(0,0,0);
 
     // RayTrace the image
-    scene->TraceImage(image, 1024);
-    //image = scene->sky->hdr;
+    scene->TraceImage(image, 8192);
 
     // Write the image
     WriteHdrImage(hdrName, scene->width, scene->height, image);

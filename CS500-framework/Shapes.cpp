@@ -4,7 +4,7 @@
 #include "Shapes.h"
 #include "raytrace.h"
 
-float e = 0.0001f;
+float e = 0.001f;
 
 
 
@@ -39,9 +39,9 @@ bool Sphere::Intersect(Ray ray, Intersection& record)
 
         if (t_m > t_p)
             return false;
-        else if (t_m > 0.0f)
+        else if (t_m >= e)
             t = t_m;
-        else if (t_p > 0.0f)
+        else if (t_p >= e)
             t = t_p;
         else
             return false;
@@ -50,8 +50,17 @@ bool Sphere::Intersect(Ray ray, Intersection& record)
     record.isIntersect = true;
     record.shape = this;
     record.t = t;
-    record.P = ray.eval(t);
-    record.N = glm::normalize(record.P - center);
+    if (!this->material->isLight()) {
+        record.P = ray.eval(t);
+        record.N = glm::normalize(record.P - center);
+    }
+    else {
+        record.P = ray.Q + t * (-ray.D);
+        record.N = -ray.D;
+    }    
+
+
+
     
     return true;
 }

@@ -127,11 +127,6 @@ void Scene::Command(const std::vector<std::string>& strings,
         //realtime->sphere(vec3(f[1], f[2], f[3]), f[4], currentMat); 
         Shape* sphere = new Sphere(vec3(f[1], f[2], f[3]), f[4], currentMat);
         vectorOfShapes.push_back(sphere);
-
-        if (currentMat->isLight()) {
-            light = new Sphere(vec3(f[1], f[2], f[3]), f[4], currentMat);
-            lightPos = vec3(f[1], f[2], f[3]);
-        }
     }
 
     else if (c == "box") {
@@ -192,7 +187,7 @@ void Scene::TraceImage(Color* image, const int pass)
                 dy = 2 * (y + myrandom(RNGen)) / height - 1.0f;
                 Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
                 tmp[y * width + x] += TracePath(ray, bvh);
-                if (myrandom(RNGen) <= rr) image[y * width + x] = tmp[y * width + x] / static_cast<float>(pass);
+                if (myrandom(RNGen) >= rr) image[y * width + x] = tmp[y * width + x] / static_cast<float>(pass);
             }
         }
 
@@ -227,6 +222,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     const float rr = 0.8f;    
     Intersection P, Q, L, I;
     BRDF brdf;
+    sky->angle = PI * 1.5f;
 
     // get closest point
     P = bvh.intersect(ray);   
@@ -235,9 +231,8 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     if (!P.isIntersect) return C;
 
     // hit light so return light
-    if (P.shape->material->isLight()) {
-        //return P.shape->material->Kd; // return EvalRadiance(P)
-        return sky->Radiance(P); // return EvalRadiance(P)
+    if (P.shape->material->isLight()) {    
+        return sky->Radiance(P);
     }
 
     // init
@@ -245,7 +240,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     Wo = normalize(-ray.D);
 
     // extend ray
-    while (myrandom(RNGen) <= rr) {     
+    while (myrandom(RNGen) < rr) {     
 
         // roughness
         alpha = P.shape->material->GGX_alpha;
@@ -281,26 +276,20 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         brdf._N = N;
         brdf._radicand = 0.0f;
 
-        //Explicit light connection
-        //L = SampleSphere(light, light->center, light->radius);        
+        //Explicit light connection     
         L = sky->SampleAsLight();
         Wi = normalize(L.P - P.P);
         const Ray new_ray1(P.P, Wi);
         I = bvh.intersect(new_ray1);
-        if (I.isIntersect) 
+        if (I.isIntersect && length(I.P - L.P) < 0.0001f) 
         {
-            //p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
-            p = sky->PdfAsLight(L)/GeometryFactor(P,L);
-            q = brdf.PdfBrdf(Wo, N, Wi) * rr;
+            p = sky->PdfAsLight(L) / GeometryFactor(P, L);
             if (p >= 0.000001f && !isnan(p)) 
             {
-                //if (I.P == L.P) 
-                {                    
-                    Wmis = p * p / (p * p + q * q);
-                    f = brdf.EvalScattering(Wo, N, Wi);                    
-                    C += W * Wmis * (f / p) * I.shape->material->EvalRadiance();                 
-                    //C += W * (f / p) * sky->Radiance(I);                 
-                }
+                q = brdf.PdfBrdf(Wo, N, Wi) * rr;
+                Wmis = p * p / (p * p + q * q);
+                f = brdf.EvalScattering(Wo, N, Wi);
+                C += W * Wmis * (f / p) * sky->Radiance(I);            
             }
         }
 
@@ -314,7 +303,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         if (!Q.isIntersect) break;
         
         p = brdf.PdfBrdf(Wo, N, Wi) * rr;
-        if (p < 0.000001f) break;        
+        if (p < 0.000001f) break;
 
         f = brdf.EvalScattering(Wo, N, Wi);        
 
@@ -323,7 +312,6 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         if (Q.shape->material->isLight()) {     
             q = sky->PdfAsLight(Q) / GeometryFactor(P, Q);
             Wmis = p * p / (p * p + q * q);
-            //if (Wmis < 0.05) Wmis = 1.0f;
             C += W * Wmis * sky->Radiance(Q);
             break;
         }
@@ -333,7 +321,9 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         N = P.N;
     }
 
+
     if (glm::all(glm::isnan(C))) C = vec3(0.0f);
+
     return C;
 }
 
@@ -382,7 +372,7 @@ vec3 BRDF::SampleBrdf(const vec3 out, const vec3 N)
     float const r1 = myrandom(RNGen);
     float const r2 = myrandom(RNGen) * 2.0f * PI;    
     float const alpha = mat.GGX_alpha;
-    float const ttr = -1.0f;
+    float const ttr = 0.0f;
     float tmp = 0.0f;
     vec3 m(0.0f);
 
@@ -396,16 +386,16 @@ vec3 BRDF::SampleBrdf(const vec3 out, const vec3 N)
         return 2.0f * fabsf(dot(out, m)) * m - out;
     }
     else {                                         // choice = transmission
-        tmp = cos(atan(alpha * sqrtf(r1) / sqrtf(1.0f - r1)));
+        tmp = cos(atan(alpha * sqrtf(r1) / sqrtf(1.0f - r1)));        
         m = SampleLobe(N, tmp, r2);
         const float WdotM = dot(out, m);
-        const float radicand = 1.0f - (ni / no) * (ni / no) * (1.0f - WdotM * WdotM);
+        float radicand = 1.0f - (ni / no) * (ni / no) * (1.0f - WdotM * WdotM);
         if (radicand < ttr) {
             return 2.0f * fabsf(WdotM) * m - out;
-        }
+        }        
         else {
             const float sign = dot(out, N) >= 0 ? 1.0f : -1.0f;
-            return ((ni / no) * WdotM - sign * sqrtf(radicand)) * m - (ni / no) * out;
+            return normalize(((ni / no) * WdotM - sign * sqrtf(radicand)) * m - (ni / no) * out);
         }
     }
 }
@@ -413,7 +403,7 @@ vec3 BRDF::SampleBrdf(const vec3 out, const vec3 N)
 float BRDF::PdfBrdf(const vec3 out, const vec3 N, const vec3 in) {
     vec3 m_r(0.0f), m_t(0.0f);
     float Pd = 0.0f, Pr = 0.0f, Pt = 0.0f;
-    float const ttr = -1.0f;
+    float const ttr = 0.0f;
 
     if (pd != 0.0f) 
         Pd = fabsf(dot(in, N)) / PI;
@@ -433,6 +423,7 @@ float BRDF::PdfBrdf(const vec3 out, const vec3 N, const vec3 in) {
             m_t = normalize(out + in);
             Pt = D_factor(m_t) * fabsf(dot(m_t, N))
                  / (4.0f * fabsf(dot(in, m_t)));
+            Pt = Pr;
         }
         else {
             Pt = D_factor(m_t) * fabsf(dot(m_t, N)) 
@@ -445,7 +436,7 @@ float BRDF::PdfBrdf(const vec3 out, const vec3 N, const vec3 in) {
 }
 
 vec3 BRDF::EvalScattering(const vec3 out, const vec3 N, const vec3 in) {    
-    float const ttr = -1.0f;
+    float const ttr = 0.0f;
     vec3 Ed(0.0f), Er(0.0f), Et(0.0f), m_r(0.0f), m_t(0.0f);
 
     // diffuse
@@ -467,6 +458,7 @@ vec3 BRDF::EvalScattering(const vec3 out, const vec3 N, const vec3 in) {
             m_t = normalize(out + in);
             Et = At * D_factor(m_t) * G_factor(in, out, m_t) * F_factor(dot(in, m_t))
                 / (4.0f * fabsf(dot(in, N)) * fabsf(dot(out, N)));
+            Et = Er;
         }
         else {
             Et = At * D_factor(m_t) * G_factor(in, out, m_t) * (vec3(1.0f) - F_factor(dot(in, m_t)))
@@ -580,8 +572,7 @@ Intersection Sky::SampleAsLight()
     float* pVPos = std::lower_bound(pVDist, pVDist + height,
         v * pVDist[height - 1]);
     int iv = pVPos - pVDist;
-    double phi = -2 * PI * iu / width;
-    //double phi = ibl->angle - 2 * PI * iu / ibl->width;
+    double phi = angle - 2.0f * PI * iu / width;    
     double theta = PI * iv / height;
     B.N = vec3(sin(theta) * cos(phi),
         sin(theta) * sin(phi),
@@ -594,7 +585,7 @@ Intersection Sky::SampleAsLight()
 float Sky::PdfAsLight(const Intersection& B) const
 {
     vec3 P = normalize(B.P);
-    double fu = (atan2(P[1], P[0])) / (PI * 2.0f);
+    double fu = (angle - atan2(P[1], P[0])) / (PI * 2.0f);
     fu = fu - floor(fu); // Wrap to be within 0...1
     int u = floor(width * fu);
     int v = floor(height * acos(P[2]) / PI);
@@ -608,14 +599,14 @@ float Sky::PdfAsLight(const Intersection& B) const
     pdfV *= height / PI;
     float theta = angleFrac * 0.5 + angleFrac * v;
     float pdf = pdfU * pdfV * sin(theta) / (4.0 * PI * radius * radius);
-    //printf("(%f %f %f) %d %d %g\n", P[0], P[1], P[2], u, v, pdf);
+
     return pdf;
 }
 
 vec3 Sky::Radiance(const Intersection& A)
 {       
     vec3 P = normalize(A.P);
-    double u = (atan2(P[1], P[0])) / (PI * 2.0f);
+    double u = (angle - atan2(P[1], P[0])) / (PI * 2.0f);
     u = u - floor(u); // Wrap to be within 0...1
     double v = acos(P[2]) / PI;
     int i0 = floor(u * width);
@@ -624,6 +615,7 @@ vec3 Sky::Radiance(const Intersection& A)
     uw[1] = u * width - i0; uw[0] = 1.0 - uw[1];
     vw[1] = v * height - j0; vw[0] = 1.0 - vw[1];
     vec3 r(0.0f, 0.0f, 0.0f);
+
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 2; j++) {
             int k = (((j0 + j) % height) * width + ((i0 + i) % width));
@@ -632,5 +624,8 @@ vec3 Sky::Radiance(const Intersection& A)
             }
         }
     }
+
+    if (glm::all(glm::isnan(r))) return vec3(0.0f);
+
     return r;
 }

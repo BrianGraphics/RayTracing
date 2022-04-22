@@ -95,8 +95,6 @@ public:
     Material* currentMat;
     vec3 ambient;
     std::vector<Shape*> vectorOfShapes;
-    Sphere* light;
-    vec3 lightPos;
     Sky* sky;
 
     Scene();
@@ -160,12 +158,13 @@ Intersection SampleSphere(Shape* object, vec3 center, float radius);
 
 class Sky {
 public:
-    float radius;
-    int width;
-    int height;
+    int    width;
+    int    height;
+    float  radius;
+    float  angle;
     float* pBuffer;
-    float* pUDist;
-    Color* hdr;
+    float* pUDist;    
+    Color* hdr;    
 
     void PreProcessing();
 
