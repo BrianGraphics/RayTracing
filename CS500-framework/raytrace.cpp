@@ -283,16 +283,13 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         Wi = normalize(L.P - P.P);
         const Ray new_ray1(P.P, Wi);
         I = bvh.intersect(new_ray1);
-        if (I.isIntersect) {
+        if (I.isIntersect && glm::length(I.P - L.P) < 0.0001f) {
             p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
             q = brdf.PdfBrdf(Wo, N, Wi) * rr;
-            if (p >= 0.000001f && !isnan(p)) {
-                if (I.P == L.P) {                    
-                    //Wmis = 1.0f;
-                    Wmis = p * p / (p * p + q * q);
-                    f = brdf.EvalScattering(Wo, N, Wi);                    
-                    C += W * Wmis * (f / p) * I.shape->material->EvalRadiance();                 
-                }
+            if (p >= 0.000001f && !isnan(p)) {                
+                Wmis = p * p / (p * p + q * q);
+                f = brdf.EvalScattering(Wo, N, Wi);                    
+                C += W * Wmis * (f / p) * I.shape->material->EvalRadiance();                 
             }
         }
 
@@ -315,9 +312,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
 
         if (Q.shape->material->isLight()) {     
             q = (1.0f / (4.0f * PI * light->radius * light->radius)) / GeometryFactor(P, Q);
-            //Wmis = 1.0f;
             Wmis = p * p / (p * p + q * q);
-            //if (Wmis < 0.05) Wmis = 1.0f;
             C += W * Wmis * Q.shape->material->EvalRadiance();
             break;
         }
@@ -327,6 +322,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         N = P.N;
     }
 
+    if (glm::any(glm::isnan(C))) C = vec3(0.0f);
     return C;
 }
 
