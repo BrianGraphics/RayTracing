@@ -167,8 +167,7 @@ void Scene::TraceImage(Color* image, const int pass)
 {
     float D = camera.D;
     float r = camera.W * sqrtf(myrandom(RNGen));
-    float theta = 2.0f * PI * r * myrandom(RNGen);
-    //float rx = camera.ry * static_cast<float>(width) / static_cast<float>(height);
+    float theta = 2.0f * PI * r * myrandom(RNGen);    
     float rx = r * cosf(theta);
     float ry = r * sinf(theta);
     float dx = 0.0f, dy = 0.0f;
@@ -186,7 +185,7 @@ void Scene::TraceImage(Color* image, const int pass)
     for (int i = 0; i < pass; ++i) {       
         #pragma omp parallel for schedule(dynamic, 1) // Magic: Multi-thread y loop
         for (int y = 0; y < height; y++) {
-            fprintf(stderr, "Rendering %4d percent\r", i/pass);
+            fprintf(stderr, "Pass: %4d\r", i);
             for (int x = 0; x < width; x++) {               
                 dx = 2 * (x + myrandom(RNGen)) / width - 1.0f;
                 dy = 2 * (y + myrandom(RNGen)) / height - 1.0f;
@@ -237,7 +236,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     if (!P.isIntersect) return C;
 
     // hit light so return light
-    if (P.shape->material->isLight()) {
+    if (P.shape->material->isLight()) {        
         return sky->Radiance(P);
     }
 
@@ -287,7 +286,8 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         Wi = normalize(L.P - P.P);
         const Ray new_ray1(P.P, Wi);
         I = bvh.intersect(new_ray1);
-        if (I.isIntersect && length(I.P - L.P) < 0.0001f) 
+        //if (I.isIntersect && I.shape == L.shape) 
+        if (I.isIntersect && length(I.P - L.P) < 0.0001f)
         {
             p = sky->PdfAsLight(L) / GeometryFactor(P, L);
             if (p >= 0.000001f && !isnan(p)) 
