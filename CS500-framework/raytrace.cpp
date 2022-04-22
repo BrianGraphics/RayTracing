@@ -170,10 +170,6 @@ void Scene::Command(const std::vector<std::string>& strings,
 void Scene::TraceImage(Color* image, const int pass)
 {
     float D = camera.D;
-    float r = camera.W * sqrtf(myrandom(RNGen));
-    float theta = 2.0f * PI * r * myrandom(RNGen);
-    float rx = r * cosf(theta);
-    float ry = r * sinf(theta);    
     float dx = 0.0f, dy = 0.0f;
     const float rr = 0.8f;
     const vec3 X = camera.ry * static_cast<float>(width) / static_cast<float>(height) * transformVector(camera.orientation, Xaxis());
@@ -194,6 +190,10 @@ void Scene::TraceImage(Color* image, const int pass)
                 dx = 2 * (x + myrandom(RNGen)) / width - 1.0f;
                 dy = 2 * (y + myrandom(RNGen)) / height - 1.0f;
                 //Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
+                float r = camera.W * sqrtf(myrandom(RNGen));
+                float theta = 2.0f * PI * r * myrandom(RNGen);
+                float rx = r * cosf(theta);
+                float ry = r * sinf(theta);
                 Ray ray(camera.eye + rx * X + ry * Y, glm::normalize((dx * D - rx) * X + (dy * D - ry) * Y - D * Z));
                 int index = y * width + x;
                 //vec3 color = TracePath(ray, bvh);
