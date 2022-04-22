@@ -56,6 +56,9 @@ public:
     vec3 eye;
     quat orientation;
     float ry;
+
+    float D = 2.0f;
+    float W = 0.2f;
 };
 
 struct MeshData

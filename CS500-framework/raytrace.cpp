@@ -169,10 +169,14 @@ void Scene::Command(const std::vector<std::string>& strings,
 
 void Scene::TraceImage(Color* image, const int pass)
 {
-    float rx = camera.ry * static_cast<float>(width) / static_cast<float>(height);
+    float D = camera.D;
+    float r = camera.W * sqrtf(myrandom(RNGen));
+    float theta = 2.0f * PI * r * myrandom(RNGen);    
+    float rx = r * cosf(theta);
+    float ry = r * sinf(theta);
     float dx = 0.0f, dy = 0.0f;
     const float rr = 0.8f;
-    const vec3 X = rx * transformVector(camera.orientation, Xaxis());
+    const vec3 X = camera.ry * static_cast<float>(width) / static_cast<float>(height) * transformVector(camera.orientation, Xaxis());
     const vec3 Y = camera.ry * transformVector(camera.orientation, Yaxis());
     const vec3 Z = transformVector(camera.orientation, Zaxis());
 
@@ -188,8 +192,8 @@ void Scene::TraceImage(Color* image, const int pass)
             fprintf(stderr, "Rendering %4d\r", y);
             for (int x = 0; x < width; x++) {               
                 dx = 2 * (x + myrandom(RNGen)) / width - 1.0f;
-                dy = 2 * (y + myrandom(RNGen)) / height - 1.0f;
-                Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
+                dy = 2 * (y + myrandom(RNGen)) / height - 1.0f;                
+                Ray ray(camera.eye + rx * X + ry * Y, glm::normalize((dx * D - rx) * X + (dy * D - ry) * Y - D * Z));
                 tmp[y * width + x] += TracePath(ray, bvh);
                 if (myrandom(RNGen) <= rr) image[y * width + x] = tmp[y * width + x] / static_cast<float>(pass);
             }
@@ -283,16 +287,12 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         Wi = normalize(L.P - P.P);
         const Ray new_ray1(P.P, Wi);
         I = bvh.intersect(new_ray1);
-        if (I.isIntersect) {
+        if (I.isIntersect && glm::length(I.P - L.P) < 0.0001f) {
             p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
             q = brdf.PdfBrdf(Wo, N, Wi) * rr;
-            if (p >= 0.000001f && !isnan(p)) {
-                if (I.P == L.P) {                    
-                    //Wmis = 1.0f;
-                    Wmis = p * p / (p * p + q * q);
-                    f = brdf.EvalScattering(Wo, N, Wi);                    
-                    C += W * Wmis * (f / p) * I.shape->material->EvalRadiance();                 
-                }
+            if (p >= 0.000001f && !isnan(p)) {                                    
+                Wmis = p * p / (p * p + q * q);                   
+                C += W * Wmis * (f / p) * I.shape->material->EvalRadiance();                                 
             }
         }
 
@@ -315,9 +315,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
 
         if (Q.shape->material->isLight()) {     
             q = (1.0f / (4.0f * PI * light->radius * light->radius)) / GeometryFactor(P, Q);
-            //Wmis = 1.0f;
             Wmis = p * p / (p * p + q * q);
-            if (Wmis < 0.05) Wmis = 1.0f;
             C += W * Wmis * Q.shape->material->EvalRadiance();
             break;
         }
@@ -326,6 +324,8 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         Wo = -Wi;
         N = P.N;
     }
+
+    if (glm::any(glm::isnan(C))) C = vec3(0.0f);
 
     return C;
 }
@@ -375,7 +375,7 @@ vec3 BRDF::SampleBrdf(const vec3 out, const vec3 N)
     float const r1 = myrandom(RNGen);
     float const r2 = myrandom(RNGen) * 2.0f * PI;    
     float const alpha = mat.GGX_alpha;
-    float const ttr = -1.0f;
+    float const ttr = 0.0f;
     float tmp = 0.0f;
     vec3 m(0.0f);
 
@@ -406,7 +406,7 @@ vec3 BRDF::SampleBrdf(const vec3 out, const vec3 N)
 float BRDF::PdfBrdf(const vec3 out, const vec3 N, const vec3 in) {
     vec3 m_r(0.0f), m_t(0.0f);
     float Pd = 0.0f, Pr = 0.0f, Pt = 0.0f;
-    float const ttr = -1.0f;
+    float const ttr = 0.0f;
 
     if (pd != 0.0f) 
         Pd = fabsf(dot(in, N)) / PI;
@@ -438,7 +438,7 @@ float BRDF::PdfBrdf(const vec3 out, const vec3 N, const vec3 in) {
 }
 
 vec3 BRDF::EvalScattering(const vec3 out, const vec3 N, const vec3 in) {    
-    float const ttr = -1.0f;
+    float const ttr = 0.0f;
     vec3 Ed(0.0f), Er(0.0f), Et(0.0f), m_r(0.0f), m_t(0.0f);
 
     // diffuse
