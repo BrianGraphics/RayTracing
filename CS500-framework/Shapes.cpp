@@ -4,7 +4,7 @@
 #include "Shapes.h"
 #include "raytrace.h"
 
-float e = 0.001f;
+float e = 0.0001f;
 
 
 

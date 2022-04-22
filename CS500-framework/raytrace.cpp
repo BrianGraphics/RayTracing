@@ -165,10 +165,15 @@ void Scene::Command(const std::vector<std::string>& strings,
 
 void Scene::TraceImage(Color* image, const int pass)
 {
-    float rx = camera.ry * static_cast<float>(width) / static_cast<float>(height);
+    float D = camera.D;
+    float r = camera.W * sqrtf(myrandom(RNGen));
+    float theta = 2.0f * PI * r * myrandom(RNGen);
+    //float rx = camera.ry * static_cast<float>(width) / static_cast<float>(height);
+    float rx = r * cosf(theta);
+    float ry = r * sinf(theta);
     float dx = 0.0f, dy = 0.0f;
     const float rr = 0.8f;
-    const vec3 X = rx * transformVector(camera.orientation, Xaxis());
+    const vec3 X = camera.ry * float(width) / float(height) * transformVector(camera.orientation, Xaxis());
     const vec3 Y = camera.ry * transformVector(camera.orientation, Yaxis());
     const vec3 Z = transformVector(camera.orientation, Zaxis());
    
@@ -181,11 +186,12 @@ void Scene::TraceImage(Color* image, const int pass)
     for (int i = 0; i < pass; ++i) {       
         #pragma omp parallel for schedule(dynamic, 1) // Magic: Multi-thread y loop
         for (int y = 0; y < height; y++) {
-            fprintf(stderr, "Rendering %4d\r", y);
+            fprintf(stderr, "Rendering %4d percent\r", i/pass);
             for (int x = 0; x < width; x++) {               
                 dx = 2 * (x + myrandom(RNGen)) / width - 1.0f;
                 dy = 2 * (y + myrandom(RNGen)) / height - 1.0f;
-                Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
+                //Ray ray(camera.eye, dx * X + dy * Y - Z);
+                Ray ray(camera.eye + rx * X + ry * Y, glm::normalize((dx * D - rx) * X + (dy * D - ry) * Y - D * Z));
                 tmp[y * width + x] += TracePath(ray, bvh);
                 if (myrandom(RNGen) >= rr) image[y * width + x] = tmp[y * width + x] / static_cast<float>(pass);
             }
@@ -231,7 +237,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     if (!P.isIntersect) return C;
 
     // hit light so return light
-    if (P.shape->material->isLight()) {    
+    if (P.shape->material->isLight()) {
         return sky->Radiance(P);
     }
 
@@ -322,7 +328,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     }
 
 
-    if (glm::all(glm::isnan(C))) C = vec3(0.0f);
+    if (glm::any(glm::isnan(C))) C = vec3(0.0f);
 
     return C;
 }
@@ -625,7 +631,7 @@ vec3 Sky::Radiance(const Intersection& A)
         }
     }
 
-    if (glm::all(glm::isnan(r))) return vec3(0.0f);
+    if (glm::any(glm::isnan(r))) return vec3(0.0f);
 
     return r;
 }
