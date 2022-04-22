@@ -169,14 +169,10 @@ void Scene::Command(const std::vector<std::string>& strings,
 
 void Scene::TraceImage(Color* image, const int pass)
 {
-    float D = camera.D;
-    float r = camera.W * sqrtf(myrandom(RNGen));
-    float theta = 2.0f * PI * r * myrandom(RNGen);    
-    float rx = r * cosf(theta);
-    float ry = r * sinf(theta);
+    float rx = camera.ry * static_cast<float>(width) / static_cast<float>(height);
     float dx = 0.0f, dy = 0.0f;
     const float rr = 0.8f;
-    const vec3 X = camera.ry * static_cast<float>(width) / static_cast<float>(height) * transformVector(camera.orientation, Xaxis());
+    const vec3 X = rx * transformVector(camera.orientation, Xaxis());
     const vec3 Y = camera.ry * transformVector(camera.orientation, Yaxis());
     const vec3 Z = transformVector(camera.orientation, Zaxis());
 
@@ -192,8 +188,8 @@ void Scene::TraceImage(Color* image, const int pass)
             fprintf(stderr, "Rendering %4d\r", y);
             for (int x = 0; x < width; x++) {               
                 dx = 2 * (x + myrandom(RNGen)) / width - 1.0f;
-                dy = 2 * (y + myrandom(RNGen)) / height - 1.0f;                
-                Ray ray(camera.eye + rx * X + ry * Y, glm::normalize((dx * D - rx) * X + (dy * D - ry) * Y - D * Z));
+                dy = 2 * (y + myrandom(RNGen)) / height - 1.0f;
+                Ray ray(camera.eye, normalize(dx * X + dy * Y - Z));
                 tmp[y * width + x] += TracePath(ray, bvh);
                 if (myrandom(RNGen) <= rr) image[y * width + x] = tmp[y * width + x] / static_cast<float>(pass);
             }
@@ -290,9 +286,10 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         if (I.isIntersect && glm::length(I.P - L.P) < 0.0001f) {
             p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
             q = brdf.PdfBrdf(Wo, N, Wi) * rr;
-            if (p >= 0.000001f && !isnan(p)) {                                    
-                Wmis = p * p / (p * p + q * q);                   
-                C += W * Wmis * (f / p) * I.shape->material->EvalRadiance();                                 
+            if (p >= 0.000001f && !isnan(p)) {                
+                Wmis = p * p / (p * p + q * q);
+                f = brdf.EvalScattering(Wo, N, Wi);                    
+                C += W * Wmis * (f / p) * I.shape->material->EvalRadiance();                 
             }
         }
 
@@ -326,7 +323,6 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     }
 
     if (glm::any(glm::isnan(C))) C = vec3(0.0f);
-
     return C;
 }
 
@@ -397,7 +393,7 @@ vec3 BRDF::SampleBrdf(const vec3 out, const vec3 N)
             return 2.0f * fabsf(WdotM) * m - out;
         }
         else {
-            const float sign = dot(out, N) >= 0 ? 1.0f : -1.0f;
+            const float sign = dot(out, N) >= 0 ? 1.0f : -1.0f; 
             return ((ni / no) * WdotM - sign * sqrtf(radicand)) * m - (ni / no) * out;
         }
     }
