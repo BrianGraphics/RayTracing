@@ -4,7 +4,7 @@
 #include "Shapes.h"
 #include "raytrace.h"
 
-float e = 0.0001f;
+float e = 0.001f;
 
 
 
@@ -39,9 +39,9 @@ bool Sphere::Intersect(Ray ray, Intersection& record)
 
         if (t_m > t_p)
             return false;
-        else if (t_m >= e)
+        else if (t_m > e)
             t = t_m;
-        else if (t_p >= e)
+        else if (t_p > e)
             t = t_p;
         else
             return false;

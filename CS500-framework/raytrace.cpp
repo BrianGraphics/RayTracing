@@ -128,8 +128,9 @@ void Scene::Command(const std::vector<std::string>& strings,
         vectorOfShapes.push_back(sphere);
 
         if (currentMat->isLight()) {
-            light = new Sphere(vec3(f[1], f[2], f[3]), f[4], currentMat);
+            light = new Sphere(vec3(f[1], f[2], f[3]), f[4], currentMat);            
             lightPos = vec3(f[1], f[2], f[3]);
+            lightObj = sphere;
         }
     }
 
@@ -185,7 +186,7 @@ void Scene::TraceImage(Color* image, const int pass)
     for (int i = 0; i < pass; ++i) {       
         #pragma omp parallel for schedule(dynamic, 1) // Magic: Multi-thread y loop
         for (int y = 0; y < height; y++) {
-            fprintf(stderr, "Rendering %4d\r", y);
+            fprintf(stderr, "Rendering %4d\r", i);
             for (int x = 0; x < width; x++) {               
                 dx = 2 * (x + myrandom(RNGen)) / width - 1.0f;
                 dy = 2 * (y + myrandom(RNGen)) / height - 1.0f;
@@ -279,14 +280,14 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
         brdf._radicand = 0.0f;
 
         //Explicit light connection
-        L = SampleSphere(light, light->center, light->radius);        
+        L = SampleSphere(lightObj, light->center, light->radius);        
         Wi = normalize(L.P - P.P);
         const Ray new_ray1(P.P, Wi);
         I = bvh.intersect(new_ray1);
-        if (I.isIntersect && glm::length(I.P - L.P) < 0.0001f) {
+        if (I.isIntersect && L.shape == I.shape) {
             p = (1 / (4 * PI * light->radius * light->radius)) / GeometryFactor(P, L);
             q = brdf.PdfBrdf(Wo, N, Wi) * rr;
-            if (p >= 0.000001f && !isnan(p)) {                
+            if (p > 0.000001f && !isnan(p)) {                
                 Wmis = p * p / (p * p + q * q);
                 f = brdf.EvalScattering(Wo, N, Wi);                    
                 C += W * Wmis * (f / p) * I.shape->material->EvalRadiance();                 
@@ -323,6 +324,7 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     }
 
     if (glm::any(glm::isnan(C))) C = vec3(0.0f);
+    if (glm::any(glm::isinf(C))) C = vec3(0.0f);
     return C;
 }
 
@@ -375,11 +377,11 @@ vec3 BRDF::SampleBrdf(const vec3 out, const vec3 N)
     float tmp = 0.0f;
     vec3 m(0.0f);
 
-    if (r <= pd) {                     // choice = diffuse                
+    if (r < pd) {                     // choice = diffuse                
         tmp = sqrtf(r1);
         return SampleLobe(N, tmp, r2);
     }
-    else if (r <= (pd + pr)) {  // choice = specular        
+    else if (r < (pd + pr)) {  // choice = specular        
         tmp = cos(atan(alpha * sqrtf(r1) / sqrtf(1.0f - r1)));
         m = SampleLobe(N, tmp, r2);
         return 2.0f * fabsf(dot(out, m)) * m - out;
@@ -417,11 +419,12 @@ float BRDF::PdfBrdf(const vec3 out, const vec3 N, const vec3 in) {
     if (pt != 0.0f) 
     {
         m_t = -normalize(no * in + ni * out);        
-        _radicand = 1.0f - (ni / no) * (ni / no) * (1.0f - dot(out, m_t) * dot(out, m_t));
-        if (_radicand < ttr) {
-            m_t = normalize(out + in);
-            Pt = D_factor(m_t) * fabsf(dot(m_t, N))
-                 / (4.0f * fabsf(dot(in, m_t)));
+        float const radicand = 1.0f - (ni / no) * (ni / no) * (1.0f - dot(out, m_t) * dot(out, m_t));
+        if (radicand < ttr) {
+            //m_t = normalize(out + in);
+            //Pt = D_factor(m_t) * fabsf(dot(m_t, N))
+            //     / (4.0f * fabsf(dot(in, m_t)));
+            Pt = Pr;
         }
         else {
             Pt = D_factor(m_t) * fabsf(dot(m_t, N)) 
@@ -451,12 +454,13 @@ vec3 BRDF::EvalScattering(const vec3 out, const vec3 N, const vec3 in) {
     {
         m_t = -normalize(no * in + ni * out);       
         const vec3 At = dot(out, N) < 0.0f ? vec3(exp(distance * log(mat.Kt.x)), exp(distance * log(mat.Kt.y)), exp(distance * log(mat.Kt.z))) : vec3(1.0f);      
-        
-        if (_radicand < ttr) {
-            m_t = normalize(out + in);
-            Et = At * D_factor(m_t) * G_factor(in, out, m_t) * F_factor(dot(in, m_t))
-                / (4.0f * fabsf(dot(in, N)) * fabsf(dot(out, N)));
-        }
+        float const radicand = 1.0f - (ni / no) * (ni / no) * (1.0f - dot(out, m_t) * dot(out, m_t));
+        if (radicand < ttr) {
+            //m_t = normalize(out + in);
+            //Et = At * D_factor(m_t) * G_factor(in, out, m_t) * F_factor(dot(in, m_t))
+            //    / (4.0f * fabsf(dot(in, N)) * fabsf(dot(out, N)));
+            Et = At * Er;
+        }        
         else {
             Et = At * D_factor(m_t) * G_factor(in, out, m_t) * (vec3(1.0f) - F_factor(dot(in, m_t)))
                 / (fabsf(dot(in, N)) * fabsf(dot(out, N)))

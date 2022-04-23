@@ -96,6 +96,7 @@ public:
     std::vector<Shape*> vectorOfShapes;
     Sphere* light;
     vec3 lightPos;
+    Shape* lightObj;
 
     Scene();
     void Finit();
