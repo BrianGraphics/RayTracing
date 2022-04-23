@@ -57,8 +57,8 @@ public:
     quat orientation;
     float ry;
 
-    float D = 2.0f;
-    float W = 0.2f;
+    float D = 1.0f;
+    float W = 0.01f;
 };
 
 struct MeshData
@@ -167,7 +167,8 @@ public:
     float  angle;
     float* pBuffer;
     float* pUDist;    
-    Color* hdr;    
+    Color* hdr;  
+    Shape* obj;
 
     void PreProcessing();
 
