@@ -57,8 +57,8 @@ public:
     quat orientation;
     float ry;
 
-    float D = 1.0f;
-    float W = 0.01f;
+    float D = 2.0f;
+    float W = 0.3f;
 };
 
 struct MeshData
