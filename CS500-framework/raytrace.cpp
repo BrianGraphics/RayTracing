@@ -194,7 +194,7 @@ void Scene::TraceImage(Color* image, const int pass)
                 float ry = r * sinf(theta);
                 //Ray ray(camera.eye + rx * X + ry * Y, glm::normalize((dx * D - rx) * X + (dy * D - ry) * Y - D * Z));
                 tmp[y * width + x] += TracePath(ray, bvh);
-                if (myrandom(RNGen) >= rr) image[y * width + x] = tmp[y * width + x] / static_cast<float>(pass);
+                if (myrandom(RNGen) < rr) image[y * width + x] = tmp[y * width + x] / static_cast<float>(pass);
             }
         }
 
