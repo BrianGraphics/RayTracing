@@ -108,22 +108,22 @@ void ReadHdrImage(const std::string inName, Scene* scene)
     int r = RGBE_ReadHeader(fp, &width, &height, &info, errbuf);
     if (r != RGBE_RETURN_SUCCESS)
         printf("error: %s\n", errbuf);
-    
-    float* data = new float[width * height * 3];
+            
     scene->sky = new Sky();
+    scene->sky->image = new float[width * height * 3];
     scene->sky->width  = width;
     scene->sky->height = height;
-    scene->sky->radius = 1000.0f;
     scene->sky->hdr = new Color[width * height];
     for (int y = 0; y < height; y++)
         for (int x = 0; x < width; x++)
             scene->sky->hdr[y * width + x] = Color(0, 0, 0);
 
+    float* data = new float[width * height * 3];
     r = RGBE_ReadPixels_RLE(fp, data, width, height, errbuf);
     if (r != RGBE_RETURN_SUCCESS)
         printf("error: %s\n", errbuf);
     fclose(fp);
-
+    
     float* dp = data;
     for (int y = height - 1; y >= 0; --y) {
         for (int x = 0; x < width; ++x) {
@@ -131,6 +131,13 @@ void ReadHdrImage(const std::string inName, Scene* scene)
             scene->sky->hdr[y * width + x][1] = *dp++;
             scene->sky->hdr[y * width + x][2] = *dp++;
         }
+    }
+
+    dp = data;
+    for (int i = width * height * 3 - 1; i >= 0; i -= 3) {
+        scene->sky->image[i-2] = *dp++;
+        scene->sky->image[i-1] = *dp++;
+        scene->sky->image[i]   = *dp++;
     }
 
     delete data;
@@ -159,7 +166,7 @@ int main(int argc, char** argv)
             image[y*scene->width + x] = Color(0,0,0);
 
     // RayTrace the image
-    scene->TraceImage(image, 4096);
+    scene->TraceImage(image, 4096);    
 
     // Write the image
     WriteHdrImage(hdrName, scene->width, scene->height, image);

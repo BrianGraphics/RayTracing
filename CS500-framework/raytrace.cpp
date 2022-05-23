@@ -128,7 +128,10 @@ void Scene::Command(const std::vector<std::string>& strings,
         Shape* sphere = new Sphere(vec3(f[1], f[2], f[3]), f[4], currentMat);
         vectorOfShapes.push_back(sphere);
 
-        if (currentMat->isLight()) sky->obj = sphere;
+        if (currentMat->isLight()) {
+            sky->obj = sphere;
+            sky->radius = f[4];
+        }
     }
 
     else if (c == "box") {
@@ -166,13 +169,12 @@ void Scene::Command(const std::vector<std::string>& strings,
 }
 
 void Scene::TraceImage(Color* image, const int pass)
-{
-    float dx = 0.0f, dy = 0.0f;
+{    
     const float rr = 0.8f;
-    const vec3 X = camera.ry * float(width) / float(height) * transformVector(camera.orientation, Xaxis());
+    const vec3 X = camera.ry * static_cast<float>(width) / static_cast<float>(height) * transformVector(camera.orientation, Xaxis());
     const vec3 Y = camera.ry * transformVector(camera.orientation, Yaxis());
     const vec3 Z = transformVector(camera.orientation, Zaxis());
-   
+    float dx = 0.0f, dy = 0.0f;
     AccelerationBvh bvh(vectorOfShapes);
     Color* tmp = new Color[width * height];
     for (int y = 0; y < height; y++)
@@ -181,9 +183,9 @@ void Scene::TraceImage(Color* image, const int pass)
 
     for (int i = 0; i < pass; ++i) {       
         #pragma omp parallel for schedule(dynamic, 1) // Magic: Multi-thread y loop
-        for (int y = 0; y < height; y++) {
-            fprintf(stderr, "Pass: %4d\r", i);
-            for (int x = 0; x < width; x++) {               
+        for (int y = 0; y < height; y++) {            
+            for (int x = 0; x < width; x++) {    
+                
                 dx = 2 * (x + myrandom(RNGen)) / width - 1.0f;
                 dy = 2 * (y + myrandom(RNGen)) / height - 1.0f;
                 Ray ray(camera.eye, dx * X + dy * Y - Z);
@@ -193,11 +195,12 @@ void Scene::TraceImage(Color* image, const int pass)
                 float rx = r * cosf(theta);
                 float ry = r * sinf(theta);
                 //Ray ray(camera.eye + rx * X + ry * Y, glm::normalize((dx * D - rx) * X + (dy * D - ry) * Y - D * Z));
-                tmp[y * width + x] += TracePath(ray, bvh);
-                if (myrandom(RNGen) < rr) image[y * width + x] = tmp[y * width + x] / static_cast<float>(pass);
+                int index = y * width + x;
+                tmp[index] += TracePath(ray, bvh);
+                if (myrandom(RNGen) < rr) image[index] = tmp[index] / static_cast<float>(pass);
             }
         }
-
+        fprintf(stderr, "Pass: %4d\r", i + 1);
         fprintf(stderr, "\n");
     }
     delete tmp;
@@ -221,15 +224,13 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     Color C = Color(0.0f, 0.0f, 0.0f);
     vec3 W = vec3(1.0f, 1.0f, 1.0f);
     vec3 N(0.0f), Wi(0.0f), Wo(0.0f), f(0.0f);
-    vec3 m(0.0f);
     float p = 0.0f, q = 0.0f, Wmis = 0.0f;
-    float s = 0.0f, p_diffuse = 0.0f, p_reflection = 0.0f, p_transmission = 0.0f;
-    float alpha = 0.0f;
+    float s = 0.0f, p_diffuse = 0.0f, p_reflection = 0.0f, p_transmission = 0.0f;    
     float ni = 0.0f, no = 0.0f, n = 0.0f;
     const float rr = 0.8f;    
     Intersection P, Q, L, I;
     BRDF brdf;
-    sky->angle = PI * 1.4f;
+    sky->angle = PI * 12.0f / 18.0f;
 
     // get closest point
     P = bvh.intersect(ray);   
@@ -238,8 +239,9 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
     if (!P.isIntersect) return C;
 
     // hit light so return light
-    if (P.shape->material->isLight()) {        
-        return sky->Radiance(P);
+    if (P.shape->material->isLight()) {               
+        //return sky->Radiance(P);
+        return C;
     }
 
     // init
@@ -248,9 +250,6 @@ Color Scene::TracePath(Ray& ray, AccelerationBvh& bvh)
 
     // extend ray
     while (myrandom(RNGen) < rr) {     
-
-        // roughness
-        alpha = P.shape->material->GGX_alpha;
 
         // probability
         p_diffuse      = length(P.shape->material->Kd);
@@ -546,14 +545,13 @@ void Sky::PreProcessing()
     float theta = angleFrac * 0.5f;
     for (unsigned int i = 0; i < height; i++, theta += angleFrac)
         pSinTheta[i] = sin(theta);
-
     for (unsigned int i = 0, m = 0; i < width; i++, m += height) {
         float* pVDist = &pBuffer[m];
-        //unsigned int k = i * 3;
-        pVDist[0] = 0.2126f * hdr[i].r + 0.7152f * hdr[i].g + 0.0722f * hdr[i].b;
+        unsigned int k = i * 3;
+        pVDist[0] = 0.2126f * image[k + 0] + 0.7152f * image[k + 1] + 0.0722f * image[k + 2];
         pVDist[0] *= pSinTheta[0];
-        for (unsigned int j = 1, k = (width + i); j < height; j++, k += width) {
-            float lum = 0.2126 * hdr[k].r + 0.7152 * hdr[k].g + 0.0722f * hdr[k].b;
+        for (unsigned int j = 1, k = (width + i) * 3; j < height; j++, k += width * 3) {
+            float lum = 0.2126 * image[k + 0] + 0.7152 * image[k + 1] + 0.0722 * image[k + 2];
             pVDist[j] = pVDist[j - 1] + lum * pSinTheta[j];
         }
         if (i == 0)
@@ -582,6 +580,8 @@ Intersection Sky::SampleAsLight()
         cos(theta));
     B.P = B.N * radius;
     B.shape = obj;
+    B.isIntersect = true;
+    B.t = 1.0f;
     return B;
 }
 
@@ -618,17 +618,15 @@ vec3 Sky::Radiance(const Intersection& A)
     uw[1] = u * width - i0; uw[0] = 1.0 - uw[1];
     vw[1] = v * height - j0; vw[0] = 1.0 - vw[1];
     vec3 r(0.0f, 0.0f, 0.0f);
-
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 2; j++) {
-            int k = (((j0 + j) % height) * width + ((i0 + i) % width));
+            int k = 3 * (((j0 + j) % height) * width + ((i0 + i) % width));
             for (int c = 0; c < 3; c++) {
-                r[c] += uw[i] * vw[j] * hdr[k][c];
+                r[c] += uw[i] * vw[j] * image[k + c];
             }
         }
     }
 
-    if (glm::any(glm::isnan(r))) return vec3(0.0f);
 
     return r;
 }

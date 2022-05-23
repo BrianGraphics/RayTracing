@@ -167,6 +167,7 @@ public:
     float  angle;
     float* pBuffer;
     float* pUDist;    
+    float* image;
     Color* hdr;  
     Shape* obj;
 

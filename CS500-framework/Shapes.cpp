@@ -55,8 +55,7 @@ bool Sphere::Intersect(Ray ray, Intersection& record)
         record.N = glm::normalize(record.P - center);
     }
     else {
-        //record.P = ray.Q + t * (-ray.D);
-        record.P = ray.eval(t);
+        record.P = ray.Q + t * (-ray.D);        
         record.N = -ray.D;
     }    
 
